@@ -63,7 +63,11 @@ export function extractExpense(text: string, meta: MessageMeta): Promise<Expense
 }
 
 /** Extract an expense record from a receipt/purchase photo on disk. */
-export async function extractExpenseFromImage(filePath: string, meta: MessageMeta): Promise<ExpenseRecord> {
+export async function extractExpenseFromImage(
+  filePath: string,
+  meta: MessageMeta,
+  caption?: string,
+): Promise<ExpenseRecord> {
   const bytes = await readFile(filePath);
   const dataUrl = `data:image/jpeg;base64,${bytes.toString("base64")}`;
   return complete(
@@ -72,7 +76,10 @@ export async function extractExpenseFromImage(filePath: string, meta: MessageMet
       {
         role: "user",
         content: [
-          { type: "text", text: userText("Receipt or purchase photo. Extract the expense.", meta) },
+          {
+            type: "text",
+            text: userText(caption ? `Receipt or purchase photo. Caption: ${caption}` : "Receipt or purchase photo. Extract the expense.", meta),
+          },
           { type: "image_url", image_url: { url: dataUrl } },
         ],
       },

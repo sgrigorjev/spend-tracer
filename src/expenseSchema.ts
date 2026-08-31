@@ -63,6 +63,7 @@ const baseRules = `You are a personal expense tracker for a family chat. Analyze
 
 Rules:
 - If the message does NOT describe a purchase or expense (casual chat, question, greeting, reminder), set is_expense=false and leave amount, category, payer and paid_at as null.
+- A message naming an amount and what it was spent on IS an expense even without verbs like "spent" or "bought". Example: "10 евро на OpenAI" means a 10 EUR expense on OpenAI.
 - amount: the numeric amount, WITHOUT currency symbol or separators. If it is unclear or missing, use null and set needs_confirmation=true.
 - currency: ISO 4217 code (RUB, USD, EUR, ...) if determinable, otherwise null.
 - category: one of ${categoryPrompt}. Use "other" when nothing else fits. Set category to null when not an expense.

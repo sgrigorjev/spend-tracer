@@ -7,6 +7,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 - Extracts expenses from plain text ("Платил 540 рублей за продукты") via LLM structured output
 - Reads totals from receipt/purchase photos (vision)
 - Transcribes voice messages (Whisper) and extracts the expense from the transcript
+- Detects silent voice messages and notifies the chat instead of transcribing
 - Hybrid confirmation: high-confidence expenses are written automatically, uncertain ones get a "Записать / Изменить / Отмена" inline prompt
 - Records every message in a raw log sheet, expenses in a dedicated `Expenses` sheet
 - Graceful shutdown on `SIGINT` / `SIGTERM`
@@ -14,6 +15,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 ## Requirements
 
 - Node.js 22.18+ (runs TypeScript natively via type stripping)
+- [ffmpeg](https://ffmpeg.org) on PATH (audio preprocessing and silence detection; the bot still works without it, just skips the silence check)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A Google Cloud service account with access to a spreadsheet
 - An [OpenAI](https://platform.openai.com) API key
@@ -52,6 +54,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 | `OPENAI_MODEL_TEXT`             | Text/voice extraction model (default `gpt-4o-mini`)                  |
 | `OPENAI_MODEL_VISION`           | Receipt-photo vision model (default `gpt-4o-mini`)                   |
 | `OPENAI_TRANSCRIPTION_MODEL`    | Voice transcription model (default `whisper-1`)                      |
+| `OPENAI_TRANSCRIPTION_LANGUAGE` | Language hint for voice transcription, e.g. `ru` (default: auto)      |
 
 ### Google Sheets setup
 
@@ -76,6 +79,20 @@ src/
   attachments.ts   # Downloads Telegram attachments and describes them
   sheets.ts        # Authenticates with Google Sheets, writes log and expenses
 ```
+
+## Testing
+
+Integration tests call the real OpenAI API and spend tokens:
+
+```sh
+npm test
+```
+
+Text, vision and transcription tests run against real media from `downloads/` (falling back to `test/fixtures/` for pinned copies) and assert on the extracted values. Tests skip the individual fixtures they cannot find, so a fresh checkout without media still runs the rest. The silence test generates its own clip and spends no tokens.
+
+Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/tts/` are covered by always-on transcription tests. Regenerate them with `npm run generate:tts`.
+
+Note: `test/fixtures/photos/` and `test/fixtures/voice/` are gitignored on purpose. Receipt photos and real voice notes are personal data.
 
 ## License
 

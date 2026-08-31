@@ -24,4 +24,6 @@ export const config = {
   modelText: optional("OPENAI_MODEL_TEXT", "gpt-4o-mini"),
   modelVision: optional("OPENAI_MODEL_VISION", "gpt-4o-mini"),
   transcriptionModel: optional("OPENAI_TRANSCRIPTION_MODEL", "whisper-1"),
+  // Optional hint for voice transcription (e.g. "ru"); empty means auto-detect.
+  transcriptionLanguage: optional("OPENAI_TRANSCRIPTION_LANGUAGE", ""),
 };
