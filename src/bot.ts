@@ -36,9 +36,13 @@ export async function startBot() {
   // through the LLM; the result is written to the Expenses sheet, directly
   // or after the user confirms it.
   bot.on("message", async (ctx) => {
+    // Hoisted so the catch can log them when a message fails mid-processing.
+    let time = "";
+    let from = "";
+    let logText = "";
     try {
-      const time = formatDate(ctx.message.date);
-      const from = formatSender(ctx.message.from);
+      time = formatDate(ctx.message.date);
+      from = formatSender(ctx.message.from);
       const meta: MessageMeta = { sender: from, timeIso: new Date(ctx.message.date * 1000).toISOString() };
 
       const text = "text" in ctx.message ? ctx.message.text : undefined;
@@ -48,7 +52,7 @@ export async function startBot() {
       if (text !== undefined && (await confirm.handleEditInput(ctx, text, meta))) return;
 
       let record: ExpenseRecord | null = null;
-      let logText = text ?? "";
+      logText = text ?? "";
       let source: ExpenseRow["source"] = "text";
       const attach = getAttachment(ctx.message);
 
@@ -62,17 +66,7 @@ export async function startBot() {
       } else if (attach && attach.kind === "voice") {
         const filePath = await downloadAttachment(ctx, attach);
         logText = `${describeAttachment(attach)} → ${filePath}`;
-        let transcript: string;
-        try {
-          transcript = await transcribe(filePath);
-        } catch (err) {
-          if (err instanceof SilentAudioError) {
-            await sheets.appendMessage({ time, from, text: `${logText} (no speech)` });
-            await ctx.reply("Аудио не содержит речи — похоже, запись пустая. Расход не внесён.");
-            return;
-          }
-          throw err;
-        }
+        const transcript = await transcribe(filePath);
         record = await extractExpense(caption ? `${transcript}\n(caption: ${caption})` : transcript, meta);
         source = "voice";
       } else if (attach) {
@@ -97,6 +91,11 @@ export async function startBot() {
         await confirm.prompt(ctx, row);
       }
     } catch (err) {
+      if (err instanceof SilentAudioError) {
+        await ctx.reply("Аудио не содержит речи — похоже, запись пустая. Расход не внесён.").catch(() => undefined);
+        await sheets.appendMessage({ time, from, text: `${logText} (no speech)` }).catch(() => undefined);
+        return;
+      }
       console.error("Failed to handle message:", err);
     }
   });

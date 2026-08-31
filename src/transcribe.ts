@@ -42,20 +42,23 @@ interface PreparedAudio {
 async function prepareAudio(filePath: string): Promise<PreparedAudio | null> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "spend-tracer-"));
   const wavPath = path.join(dir, "audio.wav");
+
+  let maxDb: number;
   try {
     await execFileAsync("ffmpeg", ["-y", "-i", filePath, "-ar", "16000", "-ac", "1", wavPath]);
     const { stderr } = await execFileAsync("ffmpeg", ["-i", wavPath, "-af", "volumedetect", "-f", "null", "-"]);
-    const maxDb = peakVolume(stderr);
-    if (maxDb < SILENCE_MAX_DB) {
-      await rm(dir, { recursive: true, force: true });
-      throw new SilentAudioError(maxDb);
-    }
-    return { path: wavPath, cleanup: () => rm(dir, { recursive: true, force: true }) };
+    maxDb = peakVolume(stderr);
   } catch (err) {
     await rm(dir, { recursive: true, force: true }).catch(() => undefined);
     if (isMissingBinary(err)) return null;
     throw err;
   }
+
+  if (maxDb < SILENCE_MAX_DB) {
+    await rm(dir, { recursive: true, force: true });
+    throw new SilentAudioError(maxDb);
+  }
+  return { path: wavPath, cleanup: () => rm(dir, { recursive: true, force: true }) };
 }
 
 /** Transcribe a voice message file to text. */
