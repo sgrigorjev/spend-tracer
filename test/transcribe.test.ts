@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { transcribe } from "../src/transcribe.ts";
 import { extractExpense, type MessageMeta } from "../src/openai.ts";
-import { fixtureFile } from "./helpers.ts";
+import { voiceFixture } from "./helpers.ts";
 
 // Real voice notes, keyed by file name with a loose expected token.
 const expected = new Map<string, RegExp>([
@@ -14,7 +14,7 @@ const expected = new Map<string, RegExp>([
 ]);
 
 for (const [name, token] of expected) {
-  const file = fixtureFile("voice", name);
+  const file = voiceFixture(name);
   test(`transcribes ${name}`, { skip: file == null }, async () => {
     const text = await transcribe(file!);
     assert.match(text, token);
