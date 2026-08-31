@@ -12,5 +12,6 @@ node_modules/
 downloads/
 *.Zone.Identifier
 
-# Personal test media (receipts, voice notes) - never commit
-test/fixtures/
+# Personal test media (receipts, real voice notes) - never commit
+test/fixtures/photos/
+test/fixtures/voice/
