@@ -1,0 +1,13 @@
+# Environment and secrets
+.env
+google-service-account.json
+
+# IDE
+.idea/
+
+# Dependencies
+node_modules/
+
+# Runtime output
+downloads/
+*.Zone.Identifier
