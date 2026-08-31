@@ -68,7 +68,7 @@ Rules:
 - currency: ISO 4217 code (RUB, USD, EUR, ...) if determinable, otherwise null.
 - category: one of ${categoryPrompt}. Use "other" when nothing else fits. Set category to null when not an expense.
 - description: a short human-readable summary in the original language of the message.
-- paid_at: ISO date (YYYY-MM-DD) ONLY if the message explicitly mentions when the purchase happened, otherwise null.
+- paid_at: when the message or receipt mentions when the purchase happened, put it here as an ISO datetime, preferring the full timestamp (YYYY-MM-DDTHH:MM:SS) when a time is given, otherwise just the date (YYYY-MM-DD). Otherwise null.
 - payer: who paid. The sender is the default payer; only override when the message explicitly says someone else paid.
 - confidence: 0..1 — how sure you are about the extracted values.
 - needs_confirmation: true when amount is missing or ambiguous, the currency could not be determined, payer is unclear, the message lists multiple purchases, category could not be determined, or confidence is below 0.8.
@@ -83,7 +83,7 @@ export const imageSystemPrompt = `${baseRules}
 The user attached an image, usually a photo of a receipt or a payment screen.
 - Read the TOTAL paid on the receipt. If there is no clear single total, set amount to null and needs_confirmation=true.
 - If the image is NOT a receipt/purchase (selfie, cat, screenshot of chat, etc.), set is_expense=false.
-- If the receipt has a date, put it in paid_at.
+- If the receipt has a date, put it in paid_at; include the time too when the receipt shows it.
 - If the amount has no currency symbol, infer the currency from the store name, language or country. If you still cannot tell, set currency to null and needs_confirmation=true.`;
 
 /**

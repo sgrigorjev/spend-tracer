@@ -39,6 +39,13 @@ test("an amount with no currency never auto-records silently", async () => {
   }
 });
 
+test("keeps the time in paid_at when the message gives one", async () => {
+  const r = await extractExpense("Вчера в 18:45 заплатил 7 евро за ужин", meta);
+  assert.equal(r.is_expense, true);
+  assert.ok(r.paid_at != null, "paid_at should be present");
+  assert.match(r.paid_at!, /18:45/, "paid_at should contain the time");
+});
+
 test("sanitizeRecord forces confirmation for an amount without a currency", () => {
   const r = sanitizeRecord({ amount: 12.5, confidence: 1, needs_confirmation: false });
   assert.equal(r.currency, null);
