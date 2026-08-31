@@ -1,11 +1,11 @@
 import process from "node:process";
-import { startBot } from "./bot.js";
+import { startBot } from "./bot.ts";
 
 // Start the bot and keep the process alive until a termination signal arrives.
 const bot = await startBot();
 
 /** Gracefully stop the bot and exit the process. */
-async function shutdown(signal) {
+async function shutdown(signal: string): Promise<void> {
   console.log(`\n${signal} received, stopping...`);
   await bot.stop();
   process.exit(0);

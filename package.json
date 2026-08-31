@@ -1,11 +1,12 @@
 {
   "name": "spend-tracer",
   "version": "1.0.0",
-  "description": "Telegram bot that logs expenses from a chat into Google Sheets",
-  "main": "src/index.js",
+  "description": "Telegram bot that analyzes expenses from a chat (text, receipt photos, voice) into Google Sheets via OpenAI",
+  "main": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
+    "start": "node src/index.ts",
+    "dev": "node --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "telegram",
@@ -20,6 +21,11 @@
     "dotenv": "^17.4.2",
     "google-auth-library": "^11.0.2",
     "google-spreadsheet": "^5.3.0",
+    "openai": "^7.8.0",
     "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
   }
 }

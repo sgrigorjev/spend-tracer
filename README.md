@@ -1,19 +1,22 @@
 # Spend Tracer
 
-A Telegram bot that tracks expenses by logging messages, photos of receipts, and voice messages from a chat into a Google Sheets spreadsheet.
+A Telegram bot that turns chat messages, receipt photos and voice messages into structured expense records in a Google Sheets spreadsheet, using OpenAI.
 
 ## Features
 
-- Logs every text message to a Google Sheet with timestamp and sender info
-- Downloads attachments (photos, documents, videos, voice messages, stickers) and records their file paths
-- Adds the original caption to attachment entries
+- Extracts expenses from plain text ("Платил 540 рублей за продукты") via LLM structured output
+- Reads totals from receipt/purchase photos (vision)
+- Transcribes voice messages (Whisper) and extracts the expense from the transcript
+- Hybrid confirmation: high-confidence expenses are written automatically, uncertain ones get a "Записать / Изменить / Отмена" inline prompt
+- Records every message in a raw log sheet, expenses in a dedicated `Expenses` sheet
 - Graceful shutdown on `SIGINT` / `SIGTERM`
 
 ## Requirements
 
-- Node.js 18+ (for native `fetch` and top-level await)
+- Node.js 22.18+ (runs TypeScript natively via type stripping)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A Google Cloud service account with access to a spreadsheet
+- An [OpenAI](https://platform.openai.com) API key
 
 ## Setup
 
@@ -36,13 +39,19 @@ A Telegram bot that tracks expenses by logging messages, photos of receipts, and
    npm start
    ```
 
+   For a dev loop with auto-restart: `npm run dev`.
+
 ## Configuration
 
-| Variable                    | Description                                                           |
-| --------------------------- | --------------------------------------------------------------------- |
-| `TELEGRAM_BOT_TOKEN`        | Token obtained from @BotFather                                        |
-| `GOOGLE_SERVICE_ACCOUNT_FILE` | Path to the service account JSON key                                  |
-| `SPREADSHEET_ID`            | ID of the Google Sheet (from its URL) to append messages to           |
+| Variable                        | Description                                                          |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `TELEGRAM_BOT_TOKEN`            | Token obtained from @BotFather                                       |
+| `GOOGLE_SERVICE_ACCOUNT_FILE`   | Path to the service account JSON key                                 |
+| `SPREADSHEET_ID`                | ID of the Google Sheet (from its URL)                                |
+| `OPENAI_API_KEY`                | OpenAI API key                                                       |
+| `OPENAI_MODEL_TEXT`             | Text/voice extraction model (default `gpt-4o-mini`)                  |
+| `OPENAI_MODEL_VISION`           | Receipt-photo vision model (default `gpt-4o-mini`)                   |
+| `OPENAI_TRANSCRIPTION_MODEL`    | Voice transcription model (default `whisper-1`)                      |
 
 ### Google Sheets setup
 
@@ -51,17 +60,21 @@ A Telegram bot that tracks expenses by logging messages, photos of receipts, and
 3. Share the target spreadsheet with the service account email (`client_email` from the key file) as **Editor**.
 4. Point `GOOGLE_SERVICE_ACCOUNT_FILE` at the downloaded key file.
 
-Messages are appended to the first sheet (`sheetsByIndex[0]`), one row per message: `time | sender | text`.
+The first sheet holds the raw message log (`time | sender | text`). The `Expenses` sheet is created automatically and holds structured rows: `time | sender | amount | currency | category | description | paid_at | payer | source | confidence | status`. `status` is `pending` until confirmed, then `confirmed` or `rejected`.
 
 ## Project structure
 
 ```
 src/
-  index.js       # Entry point; wires up the bot and handles graceful shutdown
-  bot.js         # Telegram bot: listens for messages and forwards them to the sheet
-  config.js      # Loads and validates configuration from environment variables
-  attachments.js # Downloads and describes non-text message attachments
-  sheets.js      # Authenticates with Google Sheets and appends rows
+  index.ts         # Entry point; wires up the bot and handles graceful shutdown
+  bot.ts           # Message pipeline: text / photo / voice -> expense analysis
+  config.ts        # Loads and validates configuration from environment variables
+  expenseSchema.ts # ExpenseRecord type, strict JSON schema and LLM prompts
+  openai.ts        # OpenAI client: structured text extraction and vision
+  transcribe.ts    # Voice transcription via Whisper
+  confirm.ts       # Inline confirmation buttons and pending expense flow
+  attachments.ts   # Downloads Telegram attachments and describes them
+  sheets.ts        # Authenticates with Google Sheets, writes log and expenses
 ```
 
 ## License
