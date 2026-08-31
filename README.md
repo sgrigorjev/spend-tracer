@@ -4,7 +4,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 
 ## Features
 
-- Extracts expenses from plain text ("Платил 540 рублей за продукты") via LLM structured output
+- Extracts expenses from plain text ("Платил 12 евро за продукты") via LLM structured output
 - Reads totals from receipt/purchase photos (vision)
 - Transcribes voice messages (Whisper) and extracts the expense from the transcript
 - Detects silent voice messages and notifies the chat instead of transcribing

@@ -91,7 +91,7 @@ export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): Confir
     } else {
       editChat.set(chatId, key);
       await ctx.answerCbQuery("Жду исправление");
-      await ctx.editMessageText("Напиши исправление, например:\n`540 рублей, продукты`");
+      await ctx.editMessageText("Напиши исправление, например:\n`12 евро, продукты`");
     }
   });
 
@@ -107,7 +107,7 @@ export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): Confir
 
     const record = await extractExpense(text, meta);
     if (!record.is_expense || record.amount == null) {
-      await ctx.reply("Не понял. Напиши сумму и что купил, например: `540 рублей, продукты`");
+      await ctx.reply("Не понял. Напиши сумму и что купил, например: `12 евро, продукты`");
       return true;
     }
 

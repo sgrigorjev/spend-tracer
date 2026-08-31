@@ -5,11 +5,11 @@ import { sanitizeRecord } from "../src/expenseSchema.ts";
 
 const meta: MessageMeta = { sender: "Tester", timeIso: "2026-08-31T12:00:00.000Z" };
 
-test("extracts a grocery expense in rubles", async () => {
-  const r = await extractExpense("Потратил 540 рублей на продукты в Перекрёстке", meta);
+test("extracts a grocery expense in euros", async () => {
+  const r = await extractExpense("Потратил 54 евро на продукты в супермаркете", meta);
   assert.equal(r.is_expense, true);
-  assert.equal(r.amount, 540);
-  assert.equal(r.currency, "RUB");
+  assert.equal(r.amount, 54);
+  assert.equal(r.currency, "EUR");
   assert.equal(r.category, "groceries");
 });
 

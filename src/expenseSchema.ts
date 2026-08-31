@@ -65,7 +65,7 @@ Rules:
 - If the message does NOT describe a purchase or expense (casual chat, question, greeting, reminder), set is_expense=false and leave amount, category, payer and paid_at as null.
 - A message naming an amount and what it was spent on IS an expense even without verbs like "spent" or "bought". Example: "10 евро на OpenAI" means a 10 EUR expense on OpenAI.
 - amount: the numeric amount, WITHOUT currency symbol or separators. If it is unclear or missing, use null and set needs_confirmation=true.
-- currency: ISO 4217 code (RUB, USD, EUR, ...) if determinable, otherwise null.
+- currency: ISO 4217 code (EUR, USD, GBP, ...) if determinable, otherwise null.
 - category: one of ${categoryPrompt}. Use "other" when nothing else fits. Set category to null when not an expense.
 - description: a short human-readable summary in the original language of the message.
 - paid_at: when the message or receipt mentions when the purchase happened, put it here as an ISO datetime, preferring the full timestamp (YYYY-MM-DDTHH:MM:SS) when a time is given, otherwise just the date (YYYY-MM-DD). Otherwise null.
