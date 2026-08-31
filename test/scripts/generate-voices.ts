@@ -3,20 +3,21 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openai } from "../../src/openai.ts";
 
-const outDir = fileURLToPath(new URL("../fixtures/tts", import.meta.url));
+const outDir = fileURLToPath(new URL("../fixtures/voices", import.meta.url));
 await mkdir(outDir, { recursive: true });
 
 // Synthetic, non-personal voice clips for the committed transcription fixtures.
 // The "openai" clips are dictation-style: amount + what for, no leading verb.
 const clips = [
-  { file: "tts-ru-coffee.ogg", text: "Потратил 3 евро на кофе" },
-  { file: "tts-ru-openai.ogg", text: "10 евро на OpenAI" },
-  { file: "tts-uk-coffee.ogg", text: "Витратив 3 євро на каву" },
-  { file: "tts-uk-openai.ogg", text: "10 євро на OpenAI" },
-  { file: "tts-en-coffee.ogg", text: "Spent 3 euros on coffee" },
-  { file: "tts-en-openai.ogg", text: "10 euros on OpenAI" },
-  { file: "tts-es-coffee.ogg", text: "Gasté 3 euros en café" },
-  { file: "tts-es-openai.ogg", text: "10 euros en OpenAI" },
+  { file: "ru-coffee.ogg", text: "Потратил 3 евро на кофе" },
+  { file: "ru-openai.ogg", text: "10 евро на OpenAI" },
+  { file: "uk-coffee.ogg", text: "Витратив 3 євро на каву" },
+  { file: "uk-openai.ogg", text: "10 євро на OpenAI" },
+  { file: "en-coffee.ogg", text: "Spent 3 euros on coffee" },
+  { file: "en-openai.ogg", text: "10 euros on OpenAI" },
+  { file: "en-metro.ogg", text: "Spent 5 euros on a metro pass" },
+  { file: "es-coffee.ogg", text: "Gasté 3 euros en café" },
+  { file: "es-openai.ogg", text: "10 euros en OpenAI" },
 ];
 
 for (const clip of clips) {

@@ -88,11 +88,9 @@ Integration tests call the real OpenAI API and spend tokens:
 npm test
 ```
 
-Text, vision and transcription tests run against real media from `downloads/` (falling back to `test/fixtures/` for pinned copies) and assert on the extracted values. Tests skip the individual fixtures they cannot find, so a fresh checkout without media still runs the rest. The silence test generates its own clip and spends no tokens.
+Integration tests call the real OpenAI API. All media fixtures are committed, so the suite runs the same on a fresh checkout. The silence test generates its own clip and spends no tokens.
 
-Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/tts/` are covered by always-on transcription tests. Regenerate them with `npm run generate:tts`. Committed fictional receipt images in `test/fixtures/receipts/` (Spanish pharmacies, EUR) back the always-on vision tests; regenerate with `npm run generate:receipts`.
-
-Optional real voice-note tests read from `downloads/` (live bot data, gitignored) and skip when the files are absent.
+Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/voices/` are covered by always-on transcription tests. Regenerate them with `npm run generate:voices`. Committed fictional receipt images in `test/fixtures/receipts/` (Spanish pharmacies, EUR) back the always-on vision tests; regenerate with `npm run generate:receipts`.
 
 ## License
 
