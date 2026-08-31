@@ -10,7 +10,7 @@ function required(name) {
   return value;
 }
 
-// Centralized, validated access to all configuration values.
+// Read every required variable at startup so a missing one fails fast.
 export const config = {
   telegramToken: required("TELEGRAM_BOT_TOKEN"),
   serviceAccountFile: required("GOOGLE_SERVICE_ACCOUNT_FILE"),
