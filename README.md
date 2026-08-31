@@ -7,6 +7,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 - Extracts expenses from plain text ("Платил 540 рублей за продукты") via LLM structured output
 - Reads totals from receipt/purchase photos (vision)
 - Transcribes voice messages (Whisper) and extracts the expense from the transcript
+- Detects silent voice messages and notifies the chat instead of transcribing
 - Hybrid confirmation: high-confidence expenses are written automatically, uncertain ones get a "Записать / Изменить / Отмена" inline prompt
 - Records every message in a raw log sheet, expenses in a dedicated `Expenses` sheet
 - Graceful shutdown on `SIGINT` / `SIGTERM`
@@ -14,6 +15,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 ## Requirements
 
 - Node.js 22.18+ (runs TypeScript natively via type stripping)
+- [ffmpeg](https://ffmpeg.org) on PATH (audio preprocessing and silence detection; the bot still works without it, just skips the silence check)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A Google Cloud service account with access to a spreadsheet
 - An [OpenAI](https://platform.openai.com) API key

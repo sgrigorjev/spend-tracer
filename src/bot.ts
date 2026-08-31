@@ -3,7 +3,7 @@ import { config } from "./config.ts";
 import { createSheetWriter, type ExpenseRow } from "./sheets.ts";
 import { getAttachment, downloadAttachment, describeAttachment } from "./attachments.ts";
 import { extractExpense, extractExpenseFromImage, type MessageMeta } from "./openai.ts";
-import { transcribe } from "./transcribe.ts";
+import { transcribe, SilentAudioError } from "./transcribe.ts";
 import { createConfirmHandler, recordToRow } from "./confirm.ts";
 import type { ExpenseRecord } from "./expenseSchema.ts";
 
@@ -62,7 +62,17 @@ export async function startBot() {
       } else if (attach && attach.kind === "voice") {
         const filePath = await downloadAttachment(ctx, attach);
         logText = `${describeAttachment(attach)} → ${filePath}`;
-        const transcript = await transcribe(filePath);
+        let transcript: string;
+        try {
+          transcript = await transcribe(filePath);
+        } catch (err) {
+          if (err instanceof SilentAudioError) {
+            await sheets.appendMessage({ time, from, text: `${logText} (no speech)` });
+            await ctx.reply("Аудио не содержит речи — похоже, запись пустая. Расход не внесён.");
+            return;
+          }
+          throw err;
+        }
         record = await extractExpense(caption ? `${transcript}\n(caption: ${caption})` : transcript, meta);
         source = "voice";
       } else if (attach) {
