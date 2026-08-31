@@ -92,7 +92,7 @@ Text, vision and transcription tests run against real media from `downloads/` (f
 
 Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/tts/` are covered by always-on transcription tests. Regenerate them with `npm run generate:tts`. Committed fictional receipt images in `test/fixtures/receipts/` (Spanish pharmacies, EUR) back the always-on vision tests; regenerate with `npm run generate:receipts`.
 
-Note: `test/fixtures/photos/` and `test/fixtures/voice/` are gitignored on purpose. Real receipts and real voice notes are personal data.
+Optional real voice-note tests read from `downloads/` (live bot data, gitignored) and skip when the files are absent.
 
 ## License
 

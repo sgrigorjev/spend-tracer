@@ -7,7 +7,7 @@ const bot = await startBot();
 /** Gracefully stop the bot and exit the process. */
 async function shutdown(signal: string): Promise<void> {
   console.log(`\n${signal} received, stopping...`);
-  await bot.stop();
+  bot.stop();
   process.exit(0);
 }
 
