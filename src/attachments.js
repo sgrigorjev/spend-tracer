@@ -5,10 +5,12 @@ import path from "node:path";
 
 const DOWNLOADS_DIR = "downloads";
 
+/** Strip characters that are invalid in file names. */
 function sanitize(name) {
   return name.replace(/[\\/:*?"<>|]/g, "_");
 }
 
+/** Format a byte count as a human-readable size, e.g. `2.4 MB`. */
 function formatSize(bytes) {
   if (bytes == null) return "";
   const mb = bytes / 1024 / 1024;
@@ -18,6 +20,7 @@ function formatSize(bytes) {
   return `${bytes} B`;
 }
 
+/** Extract the attachment from a message, if any. */
 function getAttachment(msg) {
   if (msg.photo) {
     const photo = msg.photo[msg.photo.length - 1];
@@ -33,15 +36,18 @@ function getAttachment(msg) {
   return null;
 }
 
+/** Format a Unix timestamp for use in file names: `YYYY-MM-DD-HH-MM-SS`. */
 function formatTimestamp(sec) {
   const d = new Date(sec * 1000);
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
+/** Download an attachment from Telegram into the downloads directory. */
 async function download(ctx, attachment) {
   const name = sanitize(attachment.name || attachment.kind);
   const filePath = path.join(DOWNLOADS_DIR, `${formatTimestamp(ctx.message.date)}-${name}`);
+  // Skip re-downloading if the file already exists (same timestamp + name).
   if (existsSync(filePath)) return filePath;
 
   /** @type {URL} */
@@ -54,6 +60,10 @@ async function download(ctx, attachment) {
   return filePath;
 }
 
+/**
+ * Build a short textual summary of a message's attachment, downloading it
+ * to disk as a side effect. Returns null for text-only messages.
+ */
 export async function describeAttachment(ctx) {
   const attachment = getAttachment(ctx.message);
   if (!attachment) return null;

@@ -1,13 +1,18 @@
 {
   "name": "spend-tracer",
   "version": "1.0.0",
-  "description": "",
+  "description": "Telegram bot that logs expenses from a chat into Google Sheets",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js"
   },
-  "keywords": [],
+  "keywords": [
+    "telegram",
+    "bot",
+    "expenses",
+    "google-sheets"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
