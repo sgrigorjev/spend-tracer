@@ -11,3 +11,6 @@ node_modules/
 # Runtime output
 downloads/
 *.Zone.Identifier
+
+# Personal test media (receipts, voice notes) - never commit
+test/fixtures/

@@ -79,6 +79,18 @@ src/
   sheets.ts        # Authenticates with Google Sheets, writes log and expenses
 ```
 
+## Testing
+
+Integration tests call the real OpenAI API and spend tokens:
+
+```sh
+npm test
+```
+
+Text, vision and transcription tests run against real media from `downloads/` (falling back to `test/fixtures/` for pinned copies) and assert on the extracted values. Tests skip the individual fixtures they cannot find, so a fresh checkout without media still runs the rest. The silence test generates its own clip and spends no tokens.
+
+Note: `test/fixtures/` is gitignored on purpose. Receipt photos and voice notes are personal data.
+
 ## License
 
 ISC

@@ -57,7 +57,7 @@ export async function startBot() {
       } else if (attach && attach.kind === "photo") {
         const filePath = await downloadAttachment(ctx, attach);
         logText = `${describeAttachment(attach)} → ${filePath}`;
-        record = await extractExpenseFromImage(caption ? `Receipt photo. Caption: ${caption}` : "", meta);
+        record = await extractExpenseFromImage(filePath, meta, caption);
         source = "photo";
       } else if (attach && attach.kind === "voice") {
         const filePath = await downloadAttachment(ctx, attach);
