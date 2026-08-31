@@ -23,7 +23,7 @@ export interface ExpenseRow {
 
 export interface SheetWriter {
   title: string;
-  appendMessage(message: { time: string; from: string; text: string }): Promise<void>;
+  appendMessage(message: { time: string; from: string; userId?: number; text: string }): Promise<void>;
   appendExpense(row: ExpenseRow): Promise<GoogleSpreadsheetRow>;
   updateExpenseStatus(row: GoogleSpreadsheetRow, status: ExpenseStatus): Promise<void>;
 }
@@ -68,7 +68,8 @@ export async function createSheetWriter(): Promise<SheetWriter> {
   return {
     title: logSheet.title,
     async appendMessage(message) {
-      await logSheet.addRow([message.time, message.from, message.text]);
+      const user = message.userId != null ? `${message.from} | ${message.userId}` : message.from;
+      await logSheet.addRow([message.time, user, message.text]);
     },
     async appendExpense(row) {
       return expensesSheet.addRow([

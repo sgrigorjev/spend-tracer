@@ -39,10 +39,12 @@ export async function startBot() {
     // Hoisted so the catch can log them when a message fails mid-processing.
     let time = "";
     let from = "";
+    let userId: number | undefined;
     let logText = "";
     try {
       time = formatDate(ctx.message.date);
       from = formatSender(ctx.message.from);
+      userId = ctx.message.from?.id;
       const meta: MessageMeta = { sender: from, timeIso: new Date(ctx.message.date * 1000).toISOString() };
 
       const text = "text" in ctx.message ? ctx.message.text : undefined;
@@ -71,12 +73,12 @@ export async function startBot() {
         source = "voice";
       } else if (attach) {
         // Unsupported attachment type: keep the raw log entry only.
-        await sheets.appendMessage({ time, from, text: describeAttachment(attach) });
+        await sheets.appendMessage({ time, from, userId, text: describeAttachment(attach) });
         return;
       }
 
       // Always keep the raw log line, whatever the outcome.
-      await sheets.appendMessage({ time, from, text: logText });
+      await sheets.appendMessage({ time, from, userId, text: logText });
 
       if (!record || !record.is_expense) return;
 
@@ -93,7 +95,7 @@ export async function startBot() {
     } catch (err) {
       if (err instanceof SilentAudioError) {
         await ctx.reply("Аудио не содержит речи — похоже, запись пустая. Расход не внесён.").catch(() => undefined);
-        await sheets.appendMessage({ time, from, text: `${logText} (no speech)` }).catch(() => undefined);
+        await sheets.appendMessage({ time, from, userId, text: `${logText} (no speech)` }).catch(() => undefined);
         return;
       }
       console.error("Failed to handle message:", err);
