@@ -7,15 +7,16 @@ const outDir = fileURLToPath(new URL("../fixtures/tts", import.meta.url));
 await mkdir(outDir, { recursive: true });
 
 // Synthetic, non-personal voice clips for the committed transcription fixtures.
+// The "openai" clips are dictation-style: amount + what for, no leading verb.
 const clips = [
   { file: "tts-ru-coffee.ogg", text: "Потратил 3 евро на кофе" },
-  { file: "tts-ru-openai.ogg", text: "Потратил 10 евро на OpenAI" },
+  { file: "tts-ru-openai.ogg", text: "10 евро на OpenAI" },
   { file: "tts-uk-coffee.ogg", text: "Витратив 3 євро на каву" },
-  { file: "tts-uk-openai.ogg", text: "Витратив 10 євро на OpenAI" },
+  { file: "tts-uk-openai.ogg", text: "10 євро на OpenAI" },
   { file: "tts-en-coffee.ogg", text: "Spent 3 euros on coffee" },
-  { file: "tts-en-openai.ogg", text: "Spent 10 euros on OpenAI" },
+  { file: "tts-en-openai.ogg", text: "10 euros on OpenAI" },
   { file: "tts-es-coffee.ogg", text: "Gasté 3 euros en café" },
-  { file: "tts-es-openai.ogg", text: "Gasté 10 euros en OpenAI" },
+  { file: "tts-es-openai.ogg", text: "10 euros en OpenAI" },
 ];
 
 for (const clip of clips) {

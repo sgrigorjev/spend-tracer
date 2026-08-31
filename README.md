@@ -54,6 +54,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 | `OPENAI_MODEL_TEXT`             | Text/voice extraction model (default `gpt-4o-mini`)                  |
 | `OPENAI_MODEL_VISION`           | Receipt-photo vision model (default `gpt-4o-mini`)                   |
 | `OPENAI_TRANSCRIPTION_MODEL`    | Voice transcription model (default `whisper-1`)                      |
+| `OPENAI_TRANSCRIPTION_LANGUAGE` | Language hint for voice transcription, e.g. `ru` (default: auto)      |
 
 ### Google Sheets setup
 

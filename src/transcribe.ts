@@ -59,13 +59,15 @@ async function prepareAudio(filePath: string): Promise<PreparedAudio | null> {
 }
 
 /** Transcribe a voice message file to text. */
-export async function transcribe(filePath: string): Promise<string> {
+export async function transcribe(filePath: string, language?: string): Promise<string> {
   const prepared = await prepareAudio(filePath);
   const audioPath = prepared ? prepared.path : filePath;
   try {
+    const lang = language || config.transcriptionLanguage || undefined;
     const res = await openai.audio.transcriptions.create({
       model: config.transcriptionModel,
       file: createReadStream(audioPath),
+      ...(lang ? { language: lang } : {}),
     });
     return res.text;
   } finally {
