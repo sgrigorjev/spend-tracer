@@ -90,9 +90,9 @@ npm test
 
 Text, vision and transcription tests run against real media from `downloads/` (falling back to `test/fixtures/` for pinned copies) and assert on the extracted values. Tests skip the individual fixtures they cannot find, so a fresh checkout without media still runs the rest. The silence test generates its own clip and spends no tokens.
 
-Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/tts/` are covered by always-on transcription tests. Regenerate them with `npm run generate:tts`.
+Committed synthetic voice clips (OpenAI TTS, RU/UK/EN/ES) in `test/fixtures/tts/` are covered by always-on transcription tests. Regenerate them with `npm run generate:tts`. Committed fictional receipt images in `test/fixtures/receipts/` (Spanish pharmacies, EUR) back the always-on vision tests; regenerate with `npm run generate:receipts`.
 
-Note: `test/fixtures/photos/` and `test/fixtures/voice/` are gitignored on purpose. Receipt photos and real voice notes are personal data.
+Note: `test/fixtures/photos/` and `test/fixtures/voice/` are gitignored on purpose. Real receipts and real voice notes are personal data.
 
 ## License
 

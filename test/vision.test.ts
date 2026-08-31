@@ -1,25 +1,27 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { extractExpenseFromImage, type MessageMeta } from "../src/openai.ts";
-import { fixtureFile } from "./helpers.ts";
 
 const meta: MessageMeta = { sender: "Tester", timeIso: "2026-08-31T12:00:00.000Z" };
+// Committed fictional receipts, generated with `npm run generate:receipts`.
+const receiptsDir = fileURLToPath(new URL("./fixtures/receipts", import.meta.url));
 
-// Real pharmacy receipts, keyed by file name with the expected total.
-const expected = new Map<string, { amount: number; currency: string }>([
-  ["2026-08-31-19-33-01-photo_AQADlR1rG2IBsEh-.jpg", { amount: 23.59, currency: "EUR" }],
-  ["2026-08-31-19-33-01-photo_AQADlh1rG2IBsEh-.jpg", { amount: 74.32, currency: "EUR" }],
-  ["2026-08-31-19-33-01-photo_AQADlx1rG2IBsEh-.jpg", { amount: 46.46, currency: "EUR" }],
-  ["2026-08-31-19-33-01-photo_AQADmB1rG2IBsEh-.jpg", { amount: 97.91, currency: "EUR" }],
+const expected = new Map<string, { amount: number; currency: string; paidAt: RegExp }>([
+  ["receipt-farmacia-sol.png", { amount: 7.15, currency: "EUR", paidAt: /2026-08-12T10:24/ }],
+  ["receipt-farmacia-vega.png", { amount: 16, currency: "EUR", paidAt: /2026-08-20T18:05/ }],
+  ["receipt-farmacia-farola.png", { amount: 17.45, currency: "EUR", paidAt: /2026-08-05T13:40/ }],
+  ["receipt-farmacia-norte.png", { amount: 6.8, currency: "EUR", paidAt: /2026-08-29T09:15/ }],
 ]);
 
 for (const [name, exp] of expected) {
-  const file = fixtureFile("photos", name);
-  test(`reads the total from ${name}`, { skip: file == null }, async () => {
-    const r = await extractExpenseFromImage(file!, meta);
+  test(`reads the total from ${name}`, async () => {
+    const r = await extractExpenseFromImage(path.join(receiptsDir, name), meta);
     assert.equal(r.is_expense, true, "should be recognized as an expense");
     assert.equal(r.amount, exp.amount, "amount should match the receipt total");
     assert.equal(r.currency, exp.currency, "currency should match the receipt");
+    assert.match(r.paid_at ?? "", exp.paidAt, "paid_at should include the date and time");
     assert.match(r.description, /^[^\n]+:/, "description should start with a store header");
     assert.match(r.description, /\n- .+:\s*\d/, "description should list priced line items");
   });
