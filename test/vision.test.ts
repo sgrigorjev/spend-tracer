@@ -20,5 +20,7 @@ for (const [name, exp] of expected) {
     assert.equal(r.is_expense, true, "should be recognized as an expense");
     assert.equal(r.amount, exp.amount, "amount should match the receipt total");
     assert.equal(r.currency, exp.currency, "currency should match the receipt");
+    assert.match(r.description, /^[^\n]+:/, "description should start with a store header");
+    assert.match(r.description, /\n- .+:\s*\d/, "description should list priced line items");
   });
 }

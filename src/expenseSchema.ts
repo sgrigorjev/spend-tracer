@@ -84,7 +84,12 @@ The user attached an image, usually a photo of a receipt or a payment screen.
 - Read the TOTAL paid on the receipt. If there is no clear single total, set amount to null and needs_confirmation=true.
 - If the image is NOT a receipt/purchase (selfie, cat, screenshot of chat, etc.), set is_expense=false.
 - If the receipt has a date, put it in paid_at; include the time too when the receipt shows it.
-- If the amount has no currency symbol, infer the currency from the store name, language or country. If you still cannot tell, set currency to null and needs_confirmation=true.`;
+- If the amount has no currency symbol, infer the currency from the store name, language or country. If you still cannot tell, set currency to null and needs_confirmation=true.
+- description: compose it from the receipt. Start with the store in the receipt's language, e.g. "Mercadona, supermercado:" or "Farmacia:" or "Аптека:", then list the line items with their prices, one per line using "- <item>: <price>". Example:
+"Mercadona, supermercado:
+- Pravafenix 40 MG: 23.59
+- Paracetamol 500 mg: 4.10"
+If a line item price is not legible, keep the item without a price. If there are no legible items, fall back to a one-line summary.`;
 
 /**
  * Coerce raw parsed JSON into a well-formed ExpenseRecord, guarding against
