@@ -1,0 +1,4 @@
+title = "spend-tracer gitleaks configuration"
+
+[extend]
+useDefault = true
