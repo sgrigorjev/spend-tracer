@@ -40,3 +40,11 @@ on your own; suggest the change and let the developer approve it.
   small and merged quickly.
 - Comments, commit messages and PRs are written in English. Match the existing code style
   (doc comments, 120-column lines, sync sqlite calls).
+
+## Prose
+
+Always run the unslop skill (.claude/skills/unslop/SKILL.md) before writing text that
+other people will read: PR titles, descriptions and comments; commit messages; project
+docs and in-code comments and docstrings; AGENTS.md itself; chat replies. Skip it only
+for one-line acknowledgements, code identifiers, log and exception strings, and
+mechanical output.
