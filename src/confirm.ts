@@ -2,6 +2,7 @@ import { Context, Markup, Telegraf } from "telegraf";
 import { extractExpense, type MessageMeta } from "./openai.ts";
 import type { ExpenseRecord } from "./expenseSchema.ts";
 import type { ExpenseRow, ExpenseSource, ExpenseStore } from "./db.ts";
+import { logger } from "./logger.ts";
 
 /** Build a sheet row from an LLM record, defaulting payer to the sender. */
 export function recordToRow(
@@ -64,6 +65,10 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
     const sent = await ctx.reply(`Похоже на расход:\n${describe(row)}\n\nЗаписать?`, keyboard(key));
     const rowId = store.appendExpense({ ...row, status: "pending" });
     pending.set(key, { rowId, promptMsgId: sent.message_id });
+    logger.info(
+      { id: rowId, amount: row.amount, currency: row.currency, category: row.category, source: row.source },
+      "Expense awaiting confirmation",
+    );
   };
 
   bot.action(/^exp:(yes|edit|no):(-?\d+):(\d+)$/, async (ctx) => {
@@ -79,16 +84,19 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
 
     if (action === "yes") {
       store.setExpenseStatus(entry.rowId, "confirmed");
+      logger.info({ id: entry.rowId, chatId }, "Expense confirmed by user");
       await ctx.answerCbQuery("Записал");
       await ctx.editMessageText("Записано в таблицу.");
       pending.delete(key);
     } else if (action === "no") {
       store.setExpenseStatus(entry.rowId, "rejected");
+      logger.info({ id: entry.rowId, chatId }, "Expense rejected by user");
       await ctx.answerCbQuery("Ок");
       await ctx.editMessageText("Не записал.");
       pending.delete(key);
     } else {
       editChat.set(chatId, key);
+      logger.info({ id: entry.rowId, chatId }, "User started editing expense");
       await ctx.answerCbQuery("Жду исправление");
       await ctx.editMessageText("Напиши исправление, например:\n`12 евро, продукты`");
     }
@@ -106,6 +114,7 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
 
     const record = await extractExpense(text, meta);
     if (!record.is_expense || record.amount == null) {
+      logger.info({ chatId }, "Edit input not recognized, asked again");
       await ctx.reply("Не понял. Напиши сумму и что купил, например: `12 евро, продукты`");
       return true;
     }
@@ -122,6 +131,7 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
     });
 
     editChat.delete(chatId);
+    logger.info({ id: entry.rowId, chatId }, "Expense updated from user edit, awaiting confirmation");
     await ctx.telegram.editMessageText(chatId, entry.promptMsgId, undefined, `Обновил:\n${describe(row)}\n\nЗаписать?`, {
       reply_markup: keyboard(key).reply_markup,
     });

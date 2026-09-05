@@ -102,9 +102,11 @@ export async function startBot() {
         } catch {
           // Logging failure must not break the reply flow.
         }
+        logger.info({ from, time }, "Silent voice message, no expense recorded");
         return;
       }
-      logger.error({ err, time, from }, "Failed to handle message");    }
+      logger.error({ err, time, from }, "Failed to handle message");
+    }
   });
 
   await bot.launch();
