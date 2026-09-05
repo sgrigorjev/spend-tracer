@@ -18,9 +18,9 @@ function optional(name: string, fallback: string): string {
 // Read every required variable at startup so a missing one fails fast.
 export const config = {
   telegramToken: required("TELEGRAM_BOT_TOKEN"),
-  serviceAccountFile: required("GOOGLE_SERVICE_ACCOUNT_FILE"),
-  spreadsheetId: required("SPREADSHEET_ID"),
   openaiApiKey: required("OPENAI_API_KEY"),
+  // Path to the SQLite database file; the directory is created on first use.
+  dbPath: optional("DB_PATH", "data/spend-tracer.db"),
   modelText: optional("OPENAI_MODEL_TEXT", "gpt-4o-mini"),
   modelVision: optional("OPENAI_MODEL_VISION", "gpt-4o-mini"),
   transcriptionModel: optional("OPENAI_TRANSCRIPTION_MODEL", "whisper-1"),

@@ -10,4 +10,5 @@ node_modules/
 
 # Runtime output
 downloads/
+data/
 *.Zone.Identifier

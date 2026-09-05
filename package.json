@@ -1,7 +1,7 @@
 {
   "name": "spend-tracer",
   "version": "1.0.0",
-  "description": "Telegram bot that analyzes expenses from a chat (text, receipt photos, voice) into Google Sheets via OpenAI",
+  "description": "Telegram bot that analyzes expenses from a chat (text, receipt photos, voice) into a local SQLite database via OpenAI",
   "main": "src/index.ts",
   "scripts": {
     "start": "node src/index.ts",
@@ -15,15 +15,13 @@
     "telegram",
     "bot",
     "expenses",
-    "google-sheets"
+    "sqlite"
   ],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "google-auth-library": "^11.0.2",
-    "google-spreadsheet": "^5.3.0",
     "openai": "^7.8.0",
     "telegraf": "^4.16.3"
   },
