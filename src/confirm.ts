@@ -1,8 +1,7 @@
 import { Context, Markup, Telegraf } from "telegraf";
-import { GoogleSpreadsheetRow } from "google-spreadsheet";
 import { extractExpense, type MessageMeta } from "./openai.ts";
 import type { ExpenseRecord } from "./expenseSchema.ts";
-import type { ExpenseRow, ExpenseSource, SheetWriter } from "./sheets.ts";
+import type { ExpenseRow, ExpenseSource, ExpenseStore } from "./db.ts";
 
 /** Build a sheet row from an LLM record, defaulting payer to the sender. */
 export function recordToRow(
@@ -26,7 +25,7 @@ export function recordToRow(
 }
 
 interface PendingEntry {
-  savedRow: GoogleSpreadsheetRow;
+  rowId: number;
   promptMsgId: number;
 }
 
@@ -43,12 +42,12 @@ export interface ConfirmHandler {
 }
 
 /**
- * Hybrid confirmation: uncertain expenses are written to the sheet as
+ * Hybrid confirmation: uncertain expenses are written to the database as
  * "pending" and the user is asked to confirm via inline buttons. Pending
- * rows survive restarts (they stay in the sheet); only the interactive
+ * rows survive restarts (they stay in the database); only the interactive
  * button state lives in memory.
  */
-export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): ConfirmHandler {
+export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): ConfirmHandler {
   const pending = new Map<string, PendingEntry>();
   const editChat = new Map<number, string>(); // chatId -> pending key
 
@@ -63,8 +62,8 @@ export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): Confir
     const chatId = ctx.chat!.id;
     const key = `${chatId}:${Date.now()}`;
     const sent = await ctx.reply(`Похоже на расход:\n${describe(row)}\n\nЗаписать?`, keyboard(key));
-    const savedRow = await sheets.appendExpense({ ...row, status: "pending" });
-    pending.set(key, { savedRow, promptMsgId: sent.message_id });
+    const rowId = store.appendExpense({ ...row, status: "pending" });
+    pending.set(key, { rowId, promptMsgId: sent.message_id });
   };
 
   bot.action(/^exp:(yes|edit|no):(-?\d+):(\d+)$/, async (ctx) => {
@@ -79,12 +78,12 @@ export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): Confir
     }
 
     if (action === "yes") {
-      await sheets.updateExpenseStatus(entry.savedRow, "confirmed");
+      store.setExpenseStatus(entry.rowId, "confirmed");
       await ctx.answerCbQuery("Записал");
       await ctx.editMessageText("Записано в таблицу.");
       pending.delete(key);
     } else if (action === "no") {
-      await sheets.updateExpenseStatus(entry.savedRow, "rejected");
+      store.setExpenseStatus(entry.rowId, "rejected");
       await ctx.answerCbQuery("Ок");
       await ctx.editMessageText("Не записал.");
       pending.delete(key);
@@ -112,16 +111,15 @@ export function createConfirmHandler(bot: Telegraf, sheets: SheetWriter): Confir
     }
 
     const row = recordToRow(record, { sender: meta.sender, time: new Date().toISOString() }, "text");
-    entry.savedRow.assign({
-      amount: row.amount ?? "",
-      currency: row.currency ?? "",
-      category: row.category ?? "",
+    store.updateExpense(entry.rowId, {
+      amount: row.amount,
+      currency: row.currency,
+      category: row.category,
       description: row.description,
-      paid_at: row.paid_at ?? "",
+      paid_at: row.paid_at,
       payer: row.payer,
       confidence: row.confidence,
     });
-    await entry.savedRow.save();
 
     editChat.delete(chatId);
     await ctx.telegram.editMessageText(chatId, entry.promptMsgId, undefined, `Обновил:\n${describe(row)}\n\nЗаписать?`, {

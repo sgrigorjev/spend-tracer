@@ -1,6 +1,6 @@
 import { Telegraf } from "telegraf";
 import { config } from "./config.ts";
-import { createSheetWriter, type ExpenseRow } from "./sheets.ts";
+import { createStore, type ExpenseRow } from "./db.ts";
 import { getAttachment, downloadAttachment, describeAttachment } from "./attachments.ts";
 import { extractExpense, extractExpenseFromImage, type MessageMeta } from "./openai.ts";
 import { transcribe, SilentAudioError } from "./transcribe.ts";
@@ -25,12 +25,12 @@ function formatSender(from?: { first_name?: string; last_name?: string; username
 }
 
 export async function startBot() {
-  const sheets = await createSheetWriter();
-  console.log(`Sheet ready: "${sheets.title}"`);
+  const store = createStore();
+  console.log(`Database ready: "${store.path}"`);
 
   const bot = new Telegraf(config.telegramToken);
   bot.catch((err) => console.error("Bot error:", err));
-  const confirm = createConfirmHandler(bot, sheets);
+  const confirm = createConfirmHandler(bot, store);
 
   // Analyze every message: text, receipt photos and voice messages all go
   // through the LLM; the result is written to the Expenses sheet, directly
@@ -73,12 +73,12 @@ export async function startBot() {
         source = "voice";
       } else if (attach) {
         // Unsupported attachment type: keep the raw log entry only.
-        await sheets.appendMessage({ time, from, userId, text: describeAttachment(attach) });
+        store.appendMessage({ time, from, userId, text: describeAttachment(attach) });
         return;
       }
 
       // Always keep the raw log line, whatever the outcome.
-      await sheets.appendMessage({ time, from, userId, text: logText });
+      store.appendMessage({ time, from, userId, text: logText });
 
       if (!record || !record.is_expense) return;
 
@@ -86,7 +86,7 @@ export async function startBot() {
 
       if (!record.needs_confirmation && record.confidence >= CONFIRM_THRESHOLD) {
         row.status = "confirmed";
-        await sheets.appendExpense(row);
+        store.appendExpense(row);
         const amount = `${row.amount}${row.currency ? ` ${row.currency}` : ""}`;
         await ctx.reply(`Записано: ${amount} · ${row.category} · ${row.description}`);
       } else {
@@ -95,7 +95,11 @@ export async function startBot() {
     } catch (err) {
       if (err instanceof SilentAudioError) {
         await ctx.reply("Аудио не содержит речи — похоже, запись пустая. Расход не внесён.").catch(() => undefined);
-        await sheets.appendMessage({ time, from, userId, text: `${logText} (no speech)` }).catch(() => undefined);
+        try {
+          store.appendMessage({ time, from, userId, text: `${logText} (no speech)` });
+        } catch {
+          // Logging failure must not break the reply flow.
+        }
         return;
       }
       console.error("Failed to handle message:", err);

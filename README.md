@@ -1,6 +1,6 @@
 # Spend Tracer
 
-A Telegram bot that turns chat messages, receipt photos and voice messages into structured expense records in a Google Sheets spreadsheet, using OpenAI.
+A Telegram bot that turns chat messages, receipt photos and voice messages into structured expense records in a local SQLite database, using OpenAI.
 
 ## Features
 
@@ -9,15 +9,14 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 - Transcribes voice messages (Whisper) and extracts the expense from the transcript
 - Detects silent voice messages and notifies the chat instead of transcribing
 - Hybrid confirmation: high-confidence expenses are written automatically, uncertain ones get a "Записать / Изменить / Отмена" inline prompt
-- Records every message in a raw log sheet, expenses in a dedicated `Expenses` sheet
+- Records every message in a raw log table, expenses in a dedicated `expenses` table
 - Graceful shutdown on `SIGINT` / `SIGTERM`
 
 ## Requirements
 
-- Node.js 22.18+ (runs TypeScript natively via type stripping)
+- Node.js 22.18+ (runs TypeScript natively via type stripping; `node:sqlite` needs 22.13+)
 - [ffmpeg](https://ffmpeg.org) on PATH (audio preprocessing and silence detection; the bot still works without it, just skips the silence check)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
-- A Google Cloud service account with access to a spreadsheet
 - An [OpenAI](https://platform.openai.com) API key
 
 ## Setup
@@ -48,22 +47,25 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 | Variable                        | Description                                                          |
 | ------------------------------- | -------------------------------------------------------------------- |
 | `TELEGRAM_BOT_TOKEN`            | Token obtained from @BotFather                                       |
-| `GOOGLE_SERVICE_ACCOUNT_FILE`   | Path to the service account JSON key                                 |
-| `SPREADSHEET_ID`                | ID of the Google Sheet (from its URL)                                |
 | `OPENAI_API_KEY`                | OpenAI API key                                                       |
+| `DB_PATH`                       | Path to the SQLite database file (default `data/spend-tracer.db`)    |
 | `OPENAI_MODEL_TEXT`             | Text/voice extraction model (default `gpt-4o-mini`)                  |
 | `OPENAI_MODEL_VISION`           | Receipt-photo vision model (default `gpt-4o-mini`)                   |
 | `OPENAI_TRANSCRIPTION_MODEL`    | Voice transcription model (default `whisper-1`)                      |
 | `OPENAI_TRANSCRIPTION_LANGUAGE` | Language hint for voice transcription, e.g. `ru` (default: auto)      |
 
-### Google Sheets setup
+### SQLite storage
 
-1. In [Google Cloud Console](https://console.cloud.google.com), create a service account and download its JSON key.
-2. Enable the **Google Sheets API** for the project.
-3. Share the target spreadsheet with the service account email (`client_email` from the key file) as **Editor**.
-4. Point `GOOGLE_SERVICE_ACCOUNT_FILE` at the downloaded key file.
+Data lives in a local SQLite database (built-in `node:sqlite`, no server or extra dependency). The file is created on first run at `DB_PATH` (`data/spend-tracer.db` by default, the directory is created automatically) and is git-ignored.
 
-The first sheet holds the raw message log (`time | sender | text`). The `Expenses` sheet is created automatically and holds structured rows: `time | sender | amount | currency | category | description | paid_at | payer | source | confidence | status`. `status` is `pending` until confirmed, then `confirmed` or `rejected`.
+- `messages` — raw message log: `time | sender | user_id | text`
+- `expenses` — structured rows: `time | sender | amount | currency | category | description | paid_at | payer | source | confidence | status`. `status` is `pending` until confirmed, then `confirmed` or `rejected`.
+
+Browse it with any SQLite client, e.g.:
+
+```sh
+sqlite3 data/spend-tracer.db 'SELECT time, amount, currency, category, status FROM expenses ORDER BY id DESC LIMIT 10'
+```
 
 ## Project structure
 
@@ -72,12 +74,12 @@ src/
   index.ts         # Entry point; wires up the bot and handles graceful shutdown
   bot.ts           # Message pipeline: text / photo / voice -> expense analysis
   config.ts        # Loads and validates configuration from environment variables
+  db.ts            # Opens the SQLite database, defines the schema and the store
   expenseSchema.ts # ExpenseRecord type, strict JSON schema and LLM prompts
   openai.ts        # OpenAI client: structured text extraction and vision
   transcribe.ts    # Voice transcription via Whisper
   confirm.ts       # Inline confirmation buttons and pending expense flow
   attachments.ts   # Downloads Telegram attachments and describes them
-  sheets.ts        # Authenticates with Google Sheets, writes log and expenses
 ```
 
 ## Testing
