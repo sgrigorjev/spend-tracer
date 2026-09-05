@@ -53,6 +53,21 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 | `OPENAI_MODEL_VISION`           | Receipt-photo vision model (default `gpt-4o-mini`)                   |
 | `OPENAI_TRANSCRIPTION_MODEL`    | Voice transcription model (default `whisper-1`)                      |
 | `OPENAI_TRANSCRIPTION_LANGUAGE` | Language hint for voice transcription, e.g. `ru` (default: auto)      |
+| `LOG_LEVEL`                     | Minimum log level, `trace`-`fatal` (default `info`)                   |
+| `LOG_FILE`                      | Write logs to this file instead of stdout (unset by default)          |
+| `LOG_PRETTY`                    | `true` for human-readable output in local development                 |
+
+### Logging
+
+The bot logs structured JSON lines via [pino](https://getpino.io) to stdout by default, so output is captured by whatever supervises the process. On a server that means:
+
+- **systemd** → `journalctl -u spend-tracer`
+- **Docker** → `docker logs <container>`
+- **PM2** → `~/.pm2/logs/spend-tracer-out.log` and `spend-tracer-error.log`
+
+Set `LOG_FILE` only if you want a plain log file on disk (for example `/var/log/spend-tracer.log`); the parent directory is created automatically. The process exits non-zero on uncaught exceptions and unhandled rejections (both logged at `fatal` level) so a supervisor can restart it.
+
+For readable output during development use `LOG_PRETTY=true npm run dev`.
 
 ### SQLite storage
 
@@ -74,6 +89,7 @@ src/
   index.ts         # Entry point; wires up the bot and handles graceful shutdown
   bot.ts           # Message pipeline: text / photo / voice -> expense analysis
   config.ts        # Loads and validates configuration from environment variables
+  logger.ts        # pino logger: level, file destination, pretty printing
   db.ts            # Opens the SQLite database, defines the schema and the store
   expenseSchema.ts # ExpenseRecord type, strict JSON schema and LLM prompts
   openai.ts        # OpenAI client: structured text extraction and vision
