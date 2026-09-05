@@ -1,5 +1,6 @@
 import { Telegraf } from "telegraf";
 import { config } from "./config.ts";
+import { logger } from "./logger.ts";
 import { createStore, type ExpenseRow } from "./db.ts";
 import { getAttachment, downloadAttachment, describeAttachment } from "./attachments.ts";
 import { extractExpense, extractExpenseFromImage, type MessageMeta } from "./openai.ts";
@@ -26,10 +27,10 @@ function formatSender(from?: { first_name?: string; last_name?: string; username
 
 export async function startBot() {
   const store = createStore();
-  console.log(`Database ready: "${store.path}"`);
+  logger.info({ dbPath: store.path }, "Database ready");
 
   const bot = new Telegraf(config.telegramToken);
-  bot.catch((err) => console.error("Bot error:", err));
+  bot.catch((err) => logger.error({ err }, "Unhandled bot error"));
   const confirm = createConfirmHandler(bot, store);
 
   // Analyze every message: text, receipt photos and voice messages all go
@@ -86,8 +87,9 @@ export async function startBot() {
 
       if (!record.needs_confirmation && record.confidence >= CONFIRM_THRESHOLD) {
         row.status = "confirmed";
-        store.appendExpense(row);
+        const id = store.appendExpense(row);
         const amount = `${row.amount}${row.currency ? ` ${row.currency}` : ""}`;
+        logger.info({ id, amount: row.amount, currency: row.currency, category: row.category, source }, "Expense recorded");
         await ctx.reply(`Записано: ${amount} · ${row.category} · ${row.description}`);
       } else {
         await confirm.prompt(ctx, row);
@@ -102,12 +104,11 @@ export async function startBot() {
         }
         return;
       }
-      console.error("Failed to handle message:", err);
-    }
+      logger.error({ err, time, from }, "Failed to handle message");    }
   });
 
   await bot.launch();
-  console.log("Listening for messages... (Ctrl+C to stop)");
+  logger.info("Listening for messages... (Ctrl+C to stop)");
 
   return bot;
 }
