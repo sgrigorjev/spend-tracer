@@ -65,10 +65,7 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
     const sent = await ctx.reply(`Похоже на расход:\n${describe(row)}\n\nЗаписать?`, keyboard(key));
     const rowId = store.appendExpense({ ...row, status: "pending" });
     pending.set(key, { rowId, promptMsgId: sent.message_id });
-    logger.info(
-      { id: rowId, amount: row.amount, currency: row.currency, category: row.category, source: row.source },
-      "Expense awaiting confirmation",
-    );
+    logger.info({ id: rowId, source: row.source }, "Expense awaiting confirmation");
   };
 
   bot.action(/^exp:(yes|edit|no):(-?\d+):(\d+)$/, async (ctx) => {

@@ -89,7 +89,7 @@ export async function startBot() {
         row.status = "confirmed";
         const id = store.appendExpense(row);
         const amount = `${row.amount}${row.currency ? ` ${row.currency}` : ""}`;
-        logger.info({ id, amount: row.amount, currency: row.currency, category: row.category, source }, "Expense recorded");
+        logger.info({ id, source }, "Expense recorded");
         await ctx.reply(`Записано: ${amount} · ${row.category} · ${row.description}`);
       } else {
         await confirm.prompt(ctx, row);
