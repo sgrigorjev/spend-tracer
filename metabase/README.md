@@ -4,7 +4,9 @@ Runs [Metabase](https://www.metabase.com) against the bot's SQLite database (`..
 
 One container, no helpers: Metabase keeps its own metadata (users, dashboards, saved questions) in an embedded database stored in the `metabase-data` volume. Your expenses never leave `data/`.
 
-The host port is `3005` because `3000` is taken on this machine by another service; change the left side of the `ports` mapping if you prefer a different one.
+The host port is `3005` because `3000` is taken on this machine by another service; change the left side of the `ports` mapping if you prefer a different one. The mapping binds to `127.0.0.1`, so the instance is reachable only from this machine. To reach it from elsewhere, put it behind an SSH tunnel or a reverse proxy with TLS, not by removing the loopback bind.
+
+This stack assumes the bot uses the default `DB_PATH` (`data/spend-tracer.db`). If you run the bot with a custom `DB_PATH`, update the `../data` mount and the Filename below to match.
 
 ## Starting
 
@@ -43,7 +45,7 @@ SELECT category,
        sum(amount) AS total
 FROM expenses
 WHERE status = 'confirmed'
-  AND substr(time, 7, 2) || substr(time, 4, 2) = strftime('%Y%m', 'now')
+  AND substr(time, 7, 4) || substr(time, 4, 2) = strftime('%Y%m', 'now')
 GROUP BY category
 ORDER BY total DESC;
 ```
@@ -51,5 +53,5 @@ ORDER BY total DESC;
 ## Notes
 
 - Stop with `docker compose down`; add `-v` to also delete the Metabase metadata volume. `data/` is never touched.
-- Memory is capped with `JAVA_OPTS=-Xmx768m` so the container fits a small VPS; raise it if Metabase feels slow.
+- The JVM heap is capped at 768 MB with `JAVA_OPTS=-Xmx768m`; raise it if Metabase feels slow. This limits the heap only, not the whole container.
 - The data directory is mounted read-write because Metabase opens the SQLite file without the read-only flag.

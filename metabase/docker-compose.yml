@@ -3,7 +3,7 @@ services:
     image: metabase/metabase:v0.63.16.6
     restart: unless-stopped
     ports:
-      - "3005:3000"
+      - "127.0.0.1:3005:3000"
     environment:
       JAVA_OPTS: "-Xmx768m"
     volumes:
