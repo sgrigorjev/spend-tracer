@@ -26,4 +26,9 @@ export const config = {
   transcriptionModel: optional("OPENAI_TRANSCRIPTION_MODEL", "whisper-1"),
   // Optional hint for voice transcription (e.g. "ru"); empty means auto-detect.
   transcriptionLanguage: optional("OPENAI_TRANSCRIPTION_LANGUAGE", ""),
+  // Logging: minimum level, optional log file (empty means stdout), and a
+  // human-readable pretty formatter for local development.
+  logLevel: optional("LOG_LEVEL", "info"),
+  logFile: optional("LOG_FILE", ""),
+  logPretty: process.env.LOG_PRETTY === "true",
 };
