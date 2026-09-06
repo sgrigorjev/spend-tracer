@@ -7,6 +7,7 @@ services:
     environment:
       JAVA_OPTS: "-Xmx768m"
       TZ: ${MB_TZ:-Europe/Kyiv}
+      JAVA_TIMEZONE: ${MB_TZ:-Europe/Kyiv}
     volumes:
       - ../data:/data
       - metabase-data:/metabase.db
