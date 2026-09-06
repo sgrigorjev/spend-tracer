@@ -13,6 +13,19 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number];
 
+/** What each category covers, fed to the model so it classifies consistently. */
+const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
+  groceries: "food and drink bought in supermarkets or markets",
+  transport: "fuel, public transport, taxi or parking",
+  housing: "rent, mortgage, furniture, repairs or household appliances",
+  utilities: "recurring bills and subscriptions: electricity, water, internet, mobile",
+  dining: "eating out: cafes, restaurants, takeaways or delivered meals",
+  entertainment: "cinema, games, concerts, hobbies, sports or fitness",
+  health: "pharmacy, medicine, doctor or dentist",
+  clothing: "clothes and shoes",
+  other: "anything that does not fit the categories above",
+};
+
 /** A structured expense extracted by the LLM. */
 export interface ExpenseRecord {
   is_expense: boolean;
@@ -57,7 +70,7 @@ export const expenseJsonSchema = {
   additionalProperties: false,
 } as const;
 
-const categoryPrompt = CATEGORIES.map((c) => `"${c}"`).join(", ");
+const categoryPrompt = CATEGORIES.map((c) => `  - ${c}: ${CATEGORY_DESCRIPTIONS[c]}`).join("\n");
 
 const baseRules = `You are a personal expense tracker for a family chat. Analyze the incoming message and extract expense information.
 
@@ -66,7 +79,8 @@ Rules:
 - A message naming an amount and what it was spent on IS an expense even without verbs like "spent" or "bought". Example: "10 евро на OpenAI" means a 10 EUR expense on OpenAI.
 - amount: the numeric amount, WITHOUT currency symbol or separators. If it is unclear or missing, use null and set needs_confirmation=true.
 - currency: ISO 4217 code (EUR, USD, GBP, ...) if determinable, otherwise null.
-- category: one of ${categoryPrompt}. Use "other" when nothing else fits. Set category to null when not an expense.
+- category: pick the closest match from the list below, using "other" when nothing fits. Set category to null when not an expense.
+${categoryPrompt}
 - description: a short human-readable summary in the original language of the message.
 - paid_at: when the message or receipt mentions when the purchase happened, put it here as an ISO datetime, preferring the full timestamp (YYYY-MM-DDTHH:MM:SS) when a time is given, otherwise just the date (YYYY-MM-DD). Otherwise null.
 - payer: who paid. The sender is the default payer; only override when the message explicitly says someone else paid.
