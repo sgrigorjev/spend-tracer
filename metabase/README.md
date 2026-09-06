@@ -45,7 +45,7 @@ SELECT category,
        sum(amount) AS total
 FROM expenses
 WHERE status = 'confirmed'
-  AND substr(time, 7, 4) || substr(time, 4, 2) = strftime('%Y%m', 'now')
+  AND substr(time, 7, 4) || substr(time, 4, 2) = strftime('%Y%m', 'now', 'localtime')
 GROUP BY category
 ORDER BY total DESC;
 ```
@@ -54,4 +54,5 @@ ORDER BY total DESC;
 
 - Stop with `docker compose down`; add `-v` to also delete the Metabase metadata volume. `data/` is never touched.
 - The JVM heap is capped at 768 MB with `JAVA_OPTS=-Xmx768m`; raise it if Metabase feels slow. This limits the heap only, not the whole container.
+- `expenses.time` is stored in the bot's local timezone, so the container must run in that same timezone for "current month" queries to classify month-boundary expenses correctly. The compose file sets `TZ` (default `Europe/Kyiv`); override it with `MB_TZ`, e.g. `MB_TZ=Europe/Madrid docker compose up -d`.
 - The data directory is mounted read-write because Metabase opens the SQLite file without the read-only flag.
