@@ -1,0 +1,14 @@
+services:
+  metabase:
+    image: metabase/metabase:v0.63.16.6
+    restart: unless-stopped
+    ports:
+      - "3005:3000"
+    environment:
+      JAVA_OPTS: "-Xmx768m"
+    volumes:
+      - ../data:/data
+      - metabase-data:/metabase.db
+
+volumes:
+  metabase-data:
