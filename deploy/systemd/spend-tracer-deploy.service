@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy spend-tracer from git
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/projects/spend-tracer
+ExecStart=/home/ubuntu/projects/spend-tracer/deploy/deploy.sh
