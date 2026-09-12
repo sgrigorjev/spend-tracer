@@ -19,11 +19,14 @@ docker compose up -d --build
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything
 chmod +x deploy/deploy.sh
-sudo cp deploy/systemd/spend-tracer-deploy.* /etc/systemd/system/
+sudo systemctl link "$PWD/deploy/systemd/spend-tracer-deploy.service"
+sudo systemctl link "$PWD/deploy/systemd/spend-tracer-deploy.timer"
 sudo systemctl daemon-reload
 sudo systemctl enable --now spend-tracer-deploy.timer
 systemctl list-timers spend-tracer-deploy.timer
 ```
+
+The units are linked, not copied, so a `git pull` that changes them takes effect after `systemctl daemon-reload`. To install copies instead, replace the two `systemctl link` calls with `sudo cp deploy/systemd/spend-tracer-deploy.* /etc/systemd/system/`.
 
 The units assume the checkout is at `/home/ubuntu/projects/spend-tracer` and the deploy user is `ubuntu`. Edit both files if your paths differ.
 
