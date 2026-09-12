@@ -25,7 +25,7 @@ sudo systemctl enable --now spend-tracer-deploy.timer
 systemctl list-timers spend-tracer-deploy.timer
 ```
 
-The units assume the checkout is at `/home/ubuntu/spend-tracer` and the deploy user is `ubuntu`. Edit both files if your paths differ.
+The units assume the checkout is at `/home/ubuntu/projects/spend-tracer` and the deploy user is `ubuntu`. Edit both files if your paths differ.
 
 ## Manual runs
 
@@ -34,7 +34,7 @@ The units assume the checkout is at `/home/ubuntu/spend-tracer` and the deploy u
 sudo systemctl start spend-tracer-deploy.service
 
 # force a rebuild even when the checkout already matches origin
-~/spend-tracer/deploy/deploy.sh --force
+~/projects/spend-tracer/deploy/deploy.sh --force
 
 journalctl -u spend-tracer-deploy.service -n 50
 ```
@@ -46,5 +46,5 @@ Use `start`, not `restart`: `restart` kills an in-flight deploy and starts it ag
 If systemd is not an option:
 
 ```cron
-*/5 * * * * flock -n /tmp/spend-tracer-deploy.lock /home/ubuntu/spend-tracer/deploy/deploy.sh >> /var/log/spend-tracer-deploy.log 2>&1
+*/5 * * * * flock -n /tmp/spend-tracer-deploy.lock /home/ubuntu/projects/spend-tracer/deploy/deploy.sh >> /var/log/spend-tracer-deploy.log 2>&1
 ```

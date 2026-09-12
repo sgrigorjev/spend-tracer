@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Pull the latest main and redeploy the Docker stack. Run by a systemd timer;
 # pass --force to rebuild even when the checkout already matches origin.
-REPO_DIR="${REPO_DIR:-/home/ubuntu/spend-tracer}"
+REPO_DIR="${REPO_DIR:-/home/ubuntu/projects/spend-tracer}"
 cd "$REPO_DIR"
 
 force=false

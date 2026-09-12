@@ -6,5 +6,5 @@ After=network-online.target
 [Service]
 Type=oneshot
 User=ubuntu
-WorkingDirectory=/home/ubuntu/spend-tracer
-ExecStart=/home/ubuntu/spend-tracer/deploy/deploy.sh
+WorkingDirectory=/home/ubuntu/projects/spend-tracer
+ExecStart=/home/ubuntu/projects/spend-tracer/deploy/deploy.sh
