@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Context, Markup, Telegraf } from "telegraf";
 import { extractExpense, type MessageMeta } from "./openai.ts";
 import type { ExpenseRecord } from "./expenseSchema.ts";
@@ -61,14 +62,14 @@ export function createConfirmHandler(bot: Telegraf, store: ExpenseStore): Confir
 
   const prompt = async (ctx: Context, row: ExpenseRow): Promise<void> => {
     const chatId = ctx.chat!.id;
-    const key = `${chatId}:${Date.now()}`;
+    const key = `${chatId}:${randomUUID()}`;
     const sent = await ctx.reply(`Похоже на расход:\n${describe(row)}\n\nЗаписать?`, keyboard(key));
     const rowId = store.appendExpense({ ...row, status: "pending" });
     pending.set(key, { rowId, promptMsgId: sent.message_id });
     logger.info({ id: rowId, source: row.source }, "Expense awaiting confirmation");
   };
 
-  bot.action(/^exp:(yes|edit|no):(-?\d+):(\d+)$/, async (ctx) => {
+  bot.action(/^exp:(yes|edit|no):(-?\d+):([0-9a-f-]+)$/, async (ctx) => {
     const m = ctx.match as RegExpExecArray;
     const action = m[1];
     const chatId = Number(m[2]);

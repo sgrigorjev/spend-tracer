@@ -62,6 +62,12 @@ export function extractExpense(text: string, meta: MessageMeta): Promise<Expense
   );
 }
 
+/** Detect a PNG or JPEG image from its magic bytes. */
+function imageMimeType(bytes: Buffer): string {
+  const isPng = bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  return isPng ? "image/png" : "image/jpeg";
+}
+
 /** Extract an expense record from a receipt/purchase photo on disk. */
 export async function extractExpenseFromImage(
   filePath: string,
@@ -69,7 +75,7 @@ export async function extractExpenseFromImage(
   caption?: string,
 ): Promise<ExpenseRecord> {
   const bytes = await readFile(filePath);
-  const dataUrl = `data:image/jpeg;base64,${bytes.toString("base64")}`;
+  const dataUrl = `data:${imageMimeType(bytes)};base64,${bytes.toString("base64")}`;
   return complete(
     [
       { role: "system", content: imageSystemPrompt },
