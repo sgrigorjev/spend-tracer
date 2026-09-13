@@ -11,6 +11,10 @@ if [ "${1:-}" = "--force" ]; then
   force=true
 fi
 
+# Fetch over SSH. accept-new admits GitHub's host key on the first run, so the
+# non-interactive timer does not hang on a host-key prompt, and verifies it after.
+export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
+
 git fetch --prune origin
 
 local_rev="$(git rev-parse HEAD)"

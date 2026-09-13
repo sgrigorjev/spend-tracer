@@ -10,11 +10,21 @@ Pull-based deployment for the Docker stack on the OCI server. The server polls o
 
 ## Install
 
-One-time setup on the server, from the repo root:
+One-time setup on the server. Get the code over SSH so the repo can stay private. Add the server's public key on GitHub first, as a deploy key or on an account.
 
 ```sh
-cp .env.example .env
-nano .env
+# fresh checkout
+git clone git@github.com:sgrigorjev/spend-tracer.git ~/projects/spend-tracer
+
+# or, on an existing HTTPS checkout, just switch the remote
+git -C ~/projects/spend-tracer remote set-url origin git@github.com:sgrigorjev/spend-tracer.git
+```
+
+Then, from the repo root:
+
+```sh
+cp bot/.env.example bot/.env
+nano bot/.env
 docker compose up -d --build
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything
