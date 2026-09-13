@@ -2,14 +2,21 @@ services:
   bot:
     build: ./bot
     restart: unless-stopped
-    env_file: ./bot/.env
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
     volumes:
       - ./data:/app/data
 
   web:
-    image: nginx:alpine
+    build: ./web
     restart: unless-stopped
     ports:
       - "127.0.0.1:8001:80"
-    volumes:
-      - ./web:/usr/share/nginx/html:ro
+    depends_on:
+      - api

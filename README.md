@@ -21,7 +21,7 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 
 ## Setup
 
-All commands below run from the `bot/` directory (`cd bot`).
+`npm install` and `npm start` run from the `bot/` directory. The `.env` file lives at the repo root.
 
 1. Install dependencies:
 
@@ -29,7 +29,7 @@ All commands below run from the `bot/` directory (`cd bot`).
    npm install
    ```
 
-2. Create a `.env` file (see [`bot/.env.example`](bot/.env.example)):
+2. From the repo root, create a `.env` file (see [`.env.example`](.env.example)):
 
    ```sh
    cp .env.example .env
@@ -84,6 +84,20 @@ Browse it with any SQLite client, e.g.:
 sqlite3 data/spend-tracer.db 'SELECT time, amount, currency, category, status FROM expenses ORDER BY id DESC LIMIT 10'
 ```
 
+## Web UI
+
+A Fastify API (`api/`) and a React frontend (`web/`) add browser sign-in on top of the bot. The frontend is a Vite app built into static files, served by nginx, which also proxies `/api/*` to the API container. Sign-in uses Google, gated by an email allowlist. Accounts live in `data/api.db`, separate from the bot's `data/spend-tracer.db`.
+
+Environment variables, in `.env.example`:
+
+- `GOOGLE_CLIENT_ID` — Google OAuth client id for the sign-in button
+- `GOOGLE_ALLOWED_EMAILS` — comma-separated list of allowed emails
+- `SESSION_SECRET` — cookie signing key
+- `API_PORT` — internal API port (default 3000)
+- `API_DB_PATH` — API database path (default `data/api.db`)
+
+The design is documented in `openspec/`.
+
 ## Project structure
 
 ```
@@ -100,8 +114,11 @@ bot/
     confirm.ts       # Inline confirmation buttons and pending expense flow
     attachments.ts   # Downloads Telegram attachments and describes them
   test/              # Integration tests and committed media fixtures
-web/                 # Web frontend placeholder (React app to come)
-docs/                # Design docs
+api/                 # Fastify API: Google sign-in and protected dashboard
+  src/               # config, db (users/identities), auth, routes
+  test/              # identity resolution tests
+web/                 # Vite + React frontend (Login, Dashboard, auth context)
+openspec/            # Change proposals and specs
 ```
 
 ## Testing

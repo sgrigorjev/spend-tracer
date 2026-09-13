@@ -8,6 +8,9 @@ google-service-account.json
 # Dependencies
 node_modules/
 
+# Build output
+dist/
+
 # Runtime output
 downloads/
 data/

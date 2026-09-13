@@ -23,8 +23,8 @@ git -C ~/projects/spend-tracer remote set-url origin git@github.com:sgrigorjev/s
 Then, from the repo root:
 
 ```sh
-cp bot/.env.example bot/.env
-nano bot/.env
+cp .env.example .env
+nano .env
 docker compose up -d --build
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything
@@ -42,11 +42,11 @@ The units assume the checkout is at `/home/ubuntu/projects/spend-tracer` and the
 
 ## Upgrading an existing install
 
-A server that already runs the bot from the old layout needs two one-time steps before the next deploy:
+A server that already runs the bot from the previous `bot/.env` layout needs two one-time steps before the next deploy:
 
 ```sh
-# move the environment file from the repo root into bot/
-mv .env bot/.env
+# move the environment file from bot/ back to the repo root
+mv bot/.env .env
 
 # let the non-root container write to the data directory
 sudo chown -R 1000:1000 data/
