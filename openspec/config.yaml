@@ -1,32 +1,30 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context (shown to the AI when it creates OpenSpec artifacts).
+context: |
+  Spend Tracer: a Telegram bot (bot/) that turns chat text, receipt photos, and
+  voice messages into expense records in SQLite, plus a web UI (web/ + api/) with
+  Google sign-in gated by an email allowlist.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Stack: TypeScript run natively via Node type stripping (no build step),
+  node:sqlite for storage, pino logging, Fastify (api/), React 19 + Vite (web/),
+  Docker Compose for deployment.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Conventions: one PR per change on a short branch off main; comments, commits, and
+  PRs in English; run `npm run typecheck` before opening a PR.
+
+  Storage: SQLite files under data/ (bot uses data/spend-tracer.db, api uses
+  data/api.db), gitignored.
+
+# Per-artifact rules (constraints applied when the AI writes that artifact).
+rules:
+  design:
+    - Always focus on security; analyze every decision for potential risks
+  tasks:
+    - Assess each task for security and risk implications
+
+# Per-operation guidance for apply and archive.
+operations:
+  apply:
+    guidance:
+      - Always focus on security; analyze every change for potential risks before applying it
