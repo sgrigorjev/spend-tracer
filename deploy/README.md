@@ -13,8 +13,8 @@ Pull-based deployment for the Docker stack on the OCI server. The server polls o
 One-time setup on the server, from the repo root:
 
 ```sh
-cp .env.example .env
-nano .env
+cp bot/.env.example bot/.env
+nano bot/.env
 docker compose up -d --build
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything

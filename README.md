@@ -21,13 +21,15 @@ A Telegram bot that turns chat messages, receipt photos and voice messages into 
 
 ## Setup
 
+All commands below run from the `bot/` directory (`cd bot`).
+
 1. Install dependencies:
 
    ```sh
    npm install
    ```
 
-2. Create a `.env` file (see [`.env.example`](.env.example)):
+2. Create a `.env` file (see [`bot/.env.example`](bot/.env.example)):
 
    ```sh
    cp .env.example .env
@@ -71,7 +73,7 @@ For readable output during development use `LOG_PRETTY=true npm run dev`.
 
 ### SQLite storage
 
-Data lives in a local SQLite database (built-in `node:sqlite`, no server or extra dependency). The file is created on first run at `DB_PATH` (`data/spend-tracer.db` by default, the directory is created automatically) and is git-ignored.
+Data lives in a local SQLite database (built-in `node:sqlite`, no server or extra dependency). The file is created on first run at `DB_PATH` (`data/spend-tracer.db` by default, relative to the process working directory) and is git-ignored. In Docker the bot mounts the repo-root `data/` directory, so production data lives there; running locally from `bot/` writes to `bot/data/` instead.
 
 - `messages` — raw message log: `time | sender | user_id | text`
 - `expenses` — structured rows: `time | sender | amount | currency | category | description | paid_at | payer | source | confidence | status`. `status` is `pending` until confirmed, then `confirmed` or `rejected`.
@@ -85,17 +87,21 @@ sqlite3 data/spend-tracer.db 'SELECT time, amount, currency, category, status FR
 ## Project structure
 
 ```
-src/
-  index.ts         # Entry point; wires up the bot and handles graceful shutdown
-  bot.ts           # Message pipeline: text / photo / voice -> expense analysis
-  config.ts        # Loads and validates configuration from environment variables
-  logger.ts        # pino logger: level, file destination, pretty printing
-  db.ts            # Opens the SQLite database, defines the schema and the store
-  expenseSchema.ts # ExpenseRecord type, strict JSON schema and LLM prompts
-  openai.ts        # OpenAI client: structured text extraction and vision
-  transcribe.ts    # Voice transcription via Whisper
-  confirm.ts       # Inline confirmation buttons and pending expense flow
-  attachments.ts   # Downloads Telegram attachments and describes them
+bot/
+  src/
+    index.ts         # Entry point; wires up the bot and handles graceful shutdown
+    bot.ts           # Message pipeline: text / photo / voice -> expense analysis
+    config.ts        # Loads and validates configuration from environment variables
+    logger.ts        # pino logger: level, file destination, pretty printing
+    db.ts            # Opens the SQLite database, defines the schema and the store
+    expenseSchema.ts # ExpenseRecord type, strict JSON schema and LLM prompts
+    openai.ts        # OpenAI client: structured text extraction and vision
+    transcribe.ts    # Voice transcription via Whisper
+    confirm.ts       # Inline confirmation buttons and pending expense flow
+    attachments.ts   # Downloads Telegram attachments and describes them
+  test/              # Integration tests and committed media fixtures
+web/                 # Web frontend placeholder (React app to come)
+docs/                # Design docs
 ```
 
 ## Testing

@@ -1,8 +1,8 @@
 services:
   bot:
-    build: .
+    build: ./bot
     restart: unless-stopped
-    env_file: .env
+    env_file: ./bot/.env
     volumes:
       - ./data:/app/data
 
@@ -10,6 +10,6 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:8001:80"
     volumes:
       - ./web:/usr/share/nginx/html:ro
