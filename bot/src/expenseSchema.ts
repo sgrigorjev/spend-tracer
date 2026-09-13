@@ -125,7 +125,7 @@ export function sanitizeRecord(raw: Partial<ExpenseRecord>): ExpenseRecord {
     paid_at: typeof raw.paid_at === "string" ? raw.paid_at : null,
     payer: typeof raw.payer === "string" ? raw.payer : null,
     confidence,
-    // An amount without a currency is not fit to record, so force a confirmation.
-    needs_confirmation: Boolean(raw.needs_confirmation) || confidence < 0.8 || (hasAmount && !hasCurrency),
+    // A record without an amount or a currency is not fit to record, so force a confirmation.
+    needs_confirmation: Boolean(raw.needs_confirmation) || confidence < 0.8 || !hasAmount || !hasCurrency,
   };
 }

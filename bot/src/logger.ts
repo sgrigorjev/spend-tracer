@@ -33,7 +33,7 @@ if (!config.logFile && config.logPretty && !pretty) {
  * for readable output during local development.
  */
 export const logger = config.logFile
-  ? pino(options, destination({ dest: config.logFile, mkdir: true }))
+  ? pino(options, destination({ dest: config.logFile, mkdir: true, sync: true }))
   : pretty
     ? pino({ ...options, transport: { target: "pino-pretty" } })
     : pino(options);

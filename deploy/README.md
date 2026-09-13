@@ -40,6 +40,18 @@ The units are linked, not copied, so a `git pull` that changes them takes effect
 
 The units assume the checkout is at `/home/ubuntu/projects/spend-tracer` and the deploy user is `ubuntu`. Edit both files if your paths differ.
 
+## Upgrading an existing install
+
+A server that already runs the bot from the old layout needs two one-time steps before the next deploy:
+
+```sh
+# move the environment file from the repo root into bot/
+mv .env bot/.env
+
+# let the non-root container write to the data directory
+sudo chown -R 1000:1000 data/
+```
+
 ## Manual runs
 
 ```sh
