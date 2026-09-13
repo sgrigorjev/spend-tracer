@@ -20,13 +20,13 @@ mechanical output.
   explicit `.ts` extensions (tsconfig: allowImportingTsExtensions). Keep it that way.
 - Run `npm run typecheck` from `bot/` after any change, before opening a PR.
 - `npm test` runs node:test from `bot/`. Most tests call the real OpenAI API, spend tokens
-  and need `bot/.env` with OPENAI_API_KEY plus ffmpeg on PATH. Prefer targeted runs
+  and need the root `.env` with OPENAI_API_KEY plus ffmpeg on PATH. Prefer targeted runs
   (`node --test test/<file>.test.ts`, e.g. test/db.test.ts); run the full suite only when
   the change warrants it.
 
 ## Runtime & data
 
-- Config comes from `bot/.env`. Required: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY. Optional:
+- Config comes from the root `.env`. Required: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY. Optional:
   DB_PATH (default data/spend-tracer.db) and model overrides.
 - Expenses and the raw message log live in a local SQLite DB (built-in `node:sqlite`,
   ExperimentalWarning on startup is expected; do not add SQLite dependencies). All writes
