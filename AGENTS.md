@@ -24,6 +24,24 @@ mechanical output.
   (`node --test test/<file>.test.ts`, e.g. test/db.test.ts); run the full suite only when
   the change warrants it.
 
+## Browser preview
+
+`opencode.json` registers the Playwright MCP so the agent can render and inspect UI in a
+real browser. It runs headless on the bundled Chromium (`--browser chromium`), because WSL
+has no system Chrome and the MCP defaults to that channel. Page snapshots go to
+`.playwright-mcp/`, which is gitignored.
+
+With the web container up, mockups are served at `http://127.0.0.1:8001/mockups/*.html`.
+Writing screenshots into `web/mockups/` makes them viewable over that same URL, since
+nginx already serves the folder.
+
+The MCP pins a Playwright alpha, so its Chromium revision drifts when the package updates.
+Reinstall the browser with the MCP's own command:
+
+```sh
+npx -y @playwright/mcp@latest install-browser chromium
+```
+
 ## Runtime & data
 
 - Config comes from the root `.env`. Required: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY. Optional:
