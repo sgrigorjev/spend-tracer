@@ -45,7 +45,7 @@ Centered card: brand mark, a Google sign-in button, and a note that access is li
 - Header with brand, theme toggle, and a user menu. The menu is drawn open to show the signed-in name, email and the Log out item.
 - Period presets as a segmented control: day, week, two weeks, month. Month is the default and means the current calendar month.
 - Four KPI cards: total for the period, operation count, daily average, top category. The first and third carry a delta against the previous period.
-- Daily bar chart of spend per day, with a static hover tooltip.
+- Daily dashed line chart of spend per day, with a hover tooltip.
 - Category donut with a legend listing amount and share per category.
 - Expenses table: date, description, category badge, payer, amount, status badge. Statuses are `Confirmed`, `Pending`, `Rejected`.
 - A paginated footer over the table.
