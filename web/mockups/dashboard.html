@@ -132,7 +132,7 @@
           <button
             id="theme-toggle"
             type="button"
-            aria-label="Переключить тему"
+            aria-label="Toggle theme"
             class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <svg
@@ -171,9 +171,9 @@
               <span
                 class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground"
               >
-                СГ
+                SG
               </span>
-              <span class="hidden font-medium sm:block">Сергей</span>
+              <span class="hidden font-medium sm:block">Sergey</span>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -190,7 +190,7 @@
               class="absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
             >
               <div class="px-3 py-2">
-                <p class="text-sm font-medium">Сергей Григорьев</p>
+                <p class="text-sm font-medium">Sergey Grigorjev</p>
                 <p class="truncate text-xs text-muted-foreground">sergey@example.com</p>
               </div>
               <div class="my-1 h-px bg-border"></div>
@@ -211,7 +211,7 @@
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" x2="9" y1="12" y2="12" />
                 </svg>
-                Выйти
+                Log out
               </button>
             </div>
           </div>
@@ -224,8 +224,8 @@
       <!-- Toolbar: heading + period presets + export -->
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 class="text-xl font-semibold tracking-tight">Расходы</h1>
-          <p class="text-sm text-muted-foreground">1 — 20 сентября 2026</p>
+          <h1 class="text-xl font-semibold tracking-tight">Expenses</h1>
+          <p class="text-sm text-muted-foreground">September 1 – 20, 2026</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="inline-flex items-center rounded-lg bg-muted p-1 text-sm" role="tablist">
@@ -234,21 +234,21 @@
               role="tab"
               class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-              Сутки
+              Day
             </button>
             <button
               type="button"
               role="tab"
               class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-              Неделя
+              Week
             </button>
             <button
               type="button"
               role="tab"
               class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-              2 недели
+              2 weeks
             </button>
             <button
               type="button"
@@ -256,7 +256,7 @@
               aria-selected="true"
               class="rounded-md bg-background px-3 py-1.5 font-medium shadow-sm"
             >
-              Месяц
+              Month
             </button>
           </div>
           <button
@@ -285,7 +285,7 @@
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted-foreground">Всего за период</span>
+            <span class="text-sm text-muted-foreground">Total spent</span>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -299,7 +299,7 @@
               <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
             </svg>
           </div>
-          <div class="mt-2 text-2xl font-semibold tabular-nums">847,00 €</div>
+          <div class="mt-2 text-2xl font-semibold tabular-nums">€847.00</div>
           <div class="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
             <svg
               viewBox="0 0 24 24"
@@ -313,13 +313,13 @@
               <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
               <polyline points="16 7 22 7 22 13" />
             </svg>
-            12,4% к прошлому месяцу
+            12.4% vs last month
           </div>
         </div>
 
         <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted-foreground">Операций</span>
+            <span class="text-sm text-muted-foreground">Transactions</span>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -334,12 +334,12 @@
             </svg>
           </div>
           <div class="mt-2 text-2xl font-semibold tabular-nums">34</div>
-          <div class="mt-1 text-xs text-muted-foreground">5 записей ждут подтверждения</div>
+          <div class="mt-1 text-xs text-muted-foreground">5 records awaiting confirmation</div>
         </div>
 
         <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted-foreground">В среднем в день</span>
+            <span class="text-sm text-muted-foreground">Daily average</span>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -353,7 +353,7 @@
               <path d="M3 10h18M8 2v4M16 2v4" />
             </svg>
           </div>
-          <div class="mt-2 text-2xl font-semibold tabular-nums">42,35 €</div>
+          <div class="mt-2 text-2xl font-semibold tabular-nums">€42.35</div>
           <div class="mt-1 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
             <svg
               viewBox="0 0 24 24"
@@ -367,13 +367,13 @@
               <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
               <polyline points="16 17 22 17 22 11" />
             </svg>
-            3,1% к прошлому месяцу
+            3.1% vs last month
           </div>
         </div>
 
         <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted-foreground">Топ категория</span>
+            <span class="text-sm text-muted-foreground">Top category</span>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -389,9 +389,9 @@
           </div>
           <div class="mt-2 flex items-center gap-2">
             <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
-            <span class="text-2xl font-semibold">Продукты</span>
+            <span class="text-2xl font-semibold">Groceries</span>
           </div>
-          <div class="mt-1 text-xs text-muted-foreground">268,00 € · 31,6% расходов</div>
+          <div class="mt-1 text-xs text-muted-foreground">€268.00 · 31.6% of spend</div>
         </div>
       </div>
 
@@ -401,12 +401,12 @@
         <div class="rounded-xl border border-border bg-card p-5 text-card-foreground lg:col-span-2">
           <div class="flex items-start justify-between">
             <div>
-              <h2 class="text-sm font-medium">Расходы по дням</h2>
-              <p class="text-xs text-muted-foreground">Сумма в EUR за каждый день периода</p>
+              <h2 class="text-sm font-medium">Daily spending</h2>
+              <p class="text-xs text-muted-foreground">Amount in EUR per day of the period</p>
             </div>
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
-              Расходы
+              Spending
             </div>
           </div>
 
@@ -441,9 +441,9 @@
               <div
                 class="absolute left-[58%] top-0 z-10 -translate-x-1/2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-lg"
               >
-                <p class="font-medium">12 сентября</p>
+                <p class="font-medium">September 12</p>
                 <p class="text-muted-foreground">
-                  <span class="font-medium text-foreground">119,00 €</span> · 4 операции
+                  <span class="font-medium text-foreground">€119.00</span> · 4 transactions
                 </p>
               </div>
             </div>
@@ -454,15 +454,15 @@
         <!-- Category donut -->
         <div class="rounded-xl border border-border bg-card p-5 text-card-foreground">
           <div>
-            <h2 class="text-sm font-medium">По категориям</h2>
-            <p class="text-xs text-muted-foreground">Доля каждой категории за период</p>
+            <h2 class="text-sm font-medium">By category</h2>
+            <p class="text-xs text-muted-foreground">Share of each category over the period</p>
           </div>
           <div class="mt-4 flex flex-col items-center gap-5 sm:flex-row lg:flex-col">
             <div class="relative shrink-0">
               <svg id="donut" viewBox="0 0 42 42" class="h-40 w-40 -rotate-90"></svg>
               <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span class="text-xs text-muted-foreground">Всего</span>
-                <span class="text-lg font-semibold tabular-nums">847 €</span>
+                <span class="text-xs text-muted-foreground">Total</span>
+                <span class="text-lg font-semibold tabular-nums">€847</span>
               </div>
             </div>
             <ul id="legend" class="w-full min-w-0 space-y-2 text-sm"></ul>
@@ -474,10 +474,10 @@
       <div class="rounded-xl border border-border bg-card text-card-foreground">
         <div class="flex items-center justify-between p-5 pb-3">
           <div>
-            <h2 class="text-sm font-medium">Операции</h2>
-            <p class="text-xs text-muted-foreground">Последние записи за период</p>
+            <h2 class="text-sm font-medium">Transactions</h2>
+            <p class="text-xs text-muted-foreground">Latest records for the period</p>
           </div>
-          <span class="text-xs text-muted-foreground">34 записи</span>
+          <span class="text-xs text-muted-foreground">34 records</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -485,32 +485,32 @@
               <tr
                 class="border-y border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground"
               >
-                <th class="px-5 py-2 font-medium">Дата</th>
-                <th class="px-3 py-2 font-medium">Описание</th>
-                <th class="px-3 py-2 font-medium">Категория</th>
-                <th class="px-3 py-2 font-medium">Плательщик</th>
-                <th class="px-3 py-2 text-right font-medium">Сумма</th>
-                <th class="px-5 py-2 font-medium">Статус</th>
+                <th class="px-5 py-2 font-medium">Date</th>
+                <th class="px-3 py-2 font-medium">Description</th>
+                <th class="px-3 py-2 font-medium">Category</th>
+                <th class="px-3 py-2 font-medium">Payer</th>
+                <th class="px-3 py-2 text-right font-medium">Amount</th>
+                <th class="px-5 py-2 font-medium">Status</th>
               </tr>
             </thead>
             <tbody id="rows" class="divide-y divide-border"></tbody>
           </table>
         </div>
         <div class="flex items-center justify-between border-t border-border p-4 text-sm">
-          <span class="text-muted-foreground">Показано 10 из 34</span>
+          <span class="text-muted-foreground">Showing 10 of 34</span>
           <div class="flex items-center gap-2">
             <button
               type="button"
               disabled
               class="rounded-lg border border-border bg-background px-3 py-1.5 font-medium text-muted-foreground opacity-50"
             >
-              Назад
+              Previous
             </button>
             <button
               type="button"
               class="rounded-lg border border-border bg-background px-3 py-1.5 font-medium transition-colors hover:bg-accent"
             >
-              Вперёд
+              Next
             </button>
           </div>
         </div>
@@ -524,28 +524,28 @@
       const scaleMax = 120;
 
       const categories = [
-        { label: "Продукты", value: 268, color: "var(--chart-1)" },
-        { label: "Транспорт", value: 142, color: "var(--chart-2)" },
-        { label: "Жильё", value: 120, color: "var(--chart-3)" },
-        { label: "Коммуналка", value: 96, color: "var(--chart-4)" },
-        { label: "Рестораны", value: 88, color: "var(--chart-5)" },
-        { label: "Развлечения", value: 55, color: "var(--chart-6)" },
-        { label: "Здоровье", value: 41, color: "var(--chart-7)" },
-        { label: "Одежда", value: 22, color: "var(--chart-8)" },
-        { label: "Прочее", value: 15, color: "var(--chart-9)" },
+        { label: "Groceries", value: 268, color: "var(--chart-1)" },
+        { label: "Transport", value: 142, color: "var(--chart-2)" },
+        { label: "Housing", value: 120, color: "var(--chart-3)" },
+        { label: "Utilities", value: 96, color: "var(--chart-4)" },
+        { label: "Dining", value: 88, color: "var(--chart-5)" },
+        { label: "Entertainment", value: 55, color: "var(--chart-6)" },
+        { label: "Health", value: 41, color: "var(--chart-7)" },
+        { label: "Clothing", value: 22, color: "var(--chart-8)" },
+        { label: "Other", value: 15, color: "var(--chart-9)" },
       ];
 
       const expenses = [
-        { date: "20 сен", desc: "Mercadona, супермаркет: молоко, хлеб", cat: "Продукты", c: 1, payer: "Сергей", amount: "23,40 €", status: "confirmed" },
-        { date: "19 сен", desc: "Заправка Repsol, бензин", cat: "Транспорт", c: 2, payer: "Сергей", amount: "62,00 €", status: "confirmed" },
-        { date: "18 сен", desc: "Farmacia: Paracetamol 500 mg", cat: "Здоровье", c: 7, payer: "Анна", amount: "8,90 €", status: "confirmed" },
-        { date: "18 сен", desc: "Ужин в ресторане", cat: "Рестораны", c: 5, payer: "Сергей", amount: "47,50 €", status: "pending" },
-        { date: "17 сен", desc: "Netflix, подписка", cat: "Коммуналка", c: 4, payer: "Анна", amount: "13,99 €", status: "confirmed" },
-        { date: "16 сен", desc: "IKEA, кухонные принадлежности", cat: "Жильё", c: 3, payer: "Сергей", amount: "74,30 €", status: "confirmed" },
-        { date: "15 сен", desc: "Кино, 2 билета", cat: "Развлечения", c: 6, payer: "Анна", amount: "21,00 €", status: "confirmed" },
-        { date: "14 сен", desc: "Zara, футболка", cat: "Одежда", c: 8, payer: "Сергей", amount: "19,95 €", status: "rejected" },
-        { date: "13 сен", desc: "Lidl, продукты на неделю", cat: "Продукты", c: 1, payer: "Анна", amount: "88,12 €", status: "confirmed" },
-        { date: "12 сен", desc: "Аптека, витамины", cat: "Здоровье", c: 7, payer: "Сергей", amount: "32,10 €", status: "confirmed" },
+        { date: "Sep 20", desc: "Mercadona, supermarket: milk, bread", cat: "Groceries", c: 1, payer: "Sergey", amount: "€23.40", status: "confirmed" },
+        { date: "Sep 19", desc: "Repsol fuel station, petrol", cat: "Transport", c: 2, payer: "Sergey", amount: "€62.00", status: "confirmed" },
+        { date: "Sep 18", desc: "Farmacia: Paracetamol 500 mg", cat: "Health", c: 7, payer: "Anna", amount: "€8.90", status: "confirmed" },
+        { date: "Sep 18", desc: "Dinner at a restaurant", cat: "Dining", c: 5, payer: "Sergey", amount: "€47.50", status: "pending" },
+        { date: "Sep 17", desc: "Netflix, subscription", cat: "Utilities", c: 4, payer: "Anna", amount: "€13.99", status: "confirmed" },
+        { date: "Sep 16", desc: "IKEA, kitchenware", cat: "Housing", c: 3, payer: "Sergey", amount: "€74.30", status: "confirmed" },
+        { date: "Sep 15", desc: "Cinema, 2 tickets", cat: "Entertainment", c: 6, payer: "Anna", amount: "€21.00", status: "confirmed" },
+        { date: "Sep 14", desc: "Zara, t-shirt", cat: "Clothing", c: 8, payer: "Sergey", amount: "€19.95", status: "rejected" },
+        { date: "Sep 13", desc: "Lidl, weekly groceries", cat: "Groceries", c: 1, payer: "Anna", amount: "€88.12", status: "confirmed" },
+        { date: "Sep 12", desc: "Pharmacy, vitamins", cat: "Health", c: 7, payer: "Sergey", amount: "€32.10", status: "confirmed" },
       ];
 
       /* ----------------------------------------------------------- bar chart */
@@ -603,7 +603,7 @@
         li.innerHTML = `
           <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${category.color}"></span>
           <span class="flex-1 truncate">${category.label}</span>
-          <span class="tabular-nums text-muted-foreground">${category.value} €</span>
+          <span class="tabular-nums text-muted-foreground">€${category.value}</span>
           <span class="w-11 text-right text-xs tabular-nums text-muted-foreground">${pct.toFixed(1)}%</span>
         `;
         legend.appendChild(li);
@@ -611,9 +611,9 @@
 
       /* --------------------------------------------------------------- table */
       const statusStyles = {
-        confirmed: ["Подтверждено", "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"],
-        pending: ["Ожидает", "bg-amber-500/10 text-amber-700 dark:text-amber-400"],
-        rejected: ["Отклонено", "bg-muted text-muted-foreground"],
+        confirmed: ["Confirmed", "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"],
+        pending: ["Pending", "bg-amber-500/10 text-amber-700 dark:text-amber-400"],
+        rejected: ["Rejected", "bg-muted text-muted-foreground"],
       };
 
       const rows = document.getElementById("rows");

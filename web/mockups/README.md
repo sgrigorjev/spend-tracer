@@ -47,7 +47,7 @@ Centered card: brand mark, a Google sign-in button, and a note that access is li
 - Four KPI cards: total for the period, operation count, daily average, top category. The first and third carry a delta against the previous period.
 - Daily bar chart of spend per day, with a static hover tooltip.
 - Category donut with a legend listing amount and share per category.
-- Expenses table: date, description, category badge, payer, amount, status badge. Statuses are `Подтверждено`, `Ожидает`, `Отклонено`.
+- Expenses table: date, description, category badge, payer, amount, status badge. Statuses are `Confirmed`, `Pending`, `Rejected`.
 - A paginated footer over the table.
 
 Both charts and the table read from arrays at the top of the `dashboard.html` script, so editing the sample data and reloading is enough to explore the layout.

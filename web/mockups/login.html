@@ -71,7 +71,7 @@
       <button
         id="theme-toggle"
         type="button"
-        aria-label="Переключить тему"
+        aria-label="Toggle theme"
         class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       >
         <svg
@@ -124,7 +124,7 @@
               </svg>
             </span>
             <h1 class="mt-4 text-xl font-semibold tracking-tight">Spend Tracer</h1>
-            <p class="mt-1 text-sm text-muted-foreground">Войдите, чтобы видеть свои расходы</p>
+            <p class="mt-1 text-sm text-muted-foreground">Sign in to see your expenses</p>
           </div>
 
           <div class="mt-8">
@@ -151,7 +151,7 @@
                   d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
                 />
               </svg>
-              Продолжить с Google
+              Continue with Google
             </button>
           </div>
 
@@ -170,12 +170,12 @@
               <rect width="18" height="11" x="3" y="11" rx="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            Доступ открыт только для аккаунтов из списка. Остальным вход будет отклонён.
+            Access is limited to allowlisted accounts. Everyone else is rejected at sign-in.
           </div>
         </div>
 
         <p class="mt-6 text-center text-xs text-muted-foreground">
-          Spend Tracer · личный трекер расходов
+          Spend Tracer · personal expense tracker
         </p>
       </div>
     </main>
@@ -183,10 +183,10 @@
     <!-- ==================== State annotations ==================== -->
     <section class="mx-auto max-w-3xl px-4 pb-16">
       <div class="rounded-2xl border border-dashed border-border p-6">
-        <h2 class="text-sm font-medium text-muted-foreground">Состояния экрана входа</h2>
+        <h2 class="text-sm font-medium text-muted-foreground">Sign-in screen states</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
-            <p class="text-xs font-medium text-muted-foreground">Загрузка GIS</p>
+            <p class="text-xs font-medium text-muted-foreground">Loading GIS</p>
             <button
               type="button"
               disabled
@@ -195,11 +195,11 @@
               <span
                 class="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
               ></span>
-              Загрузка…
+              Loading…
             </button>
           </div>
           <div class="space-y-2">
-            <p class="text-xs font-medium text-muted-foreground">Ошибка / доступ запрещён</p>
+            <p class="text-xs font-medium text-muted-foreground">Error / access denied</p>
             <div
               role="alert"
               class="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
@@ -216,7 +216,7 @@
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 8v4M12 16h.01" />
               </svg>
-              Этот аккаунт не входит в список разрешённых.
+              This account is not on the allowlist.
             </div>
           </div>
         </div>
