@@ -18,5 +18,9 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8001:80"
+    volumes:
+      # Design mockups, served as static files next to the built SPA. Local preview only;
+      # remove this mount together with web/mockups once the mockups are implemented.
+      - ./web/mockups:/usr/share/nginx/html/mockups:ro
     depends_on:
       - api
