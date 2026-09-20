@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spend Tracer — Dashboard (mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      /* Static mockup. Tokens mirror shadcn/ui's default "neutral" theme, so the
+         markup below maps 1:1 onto the real Tailwind v4 + shadcn implementation. */
+      @custom-variant dark (&:where(.dark, .dark *));
+
+      :root {
+        --radius: 0.625rem;
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+        --card: oklch(1 0 0);
+        --card-foreground: oklch(0.145 0 0);
+        --popover: oklch(1 0 0);
+        --popover-foreground: oklch(0.145 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-foreground: oklch(0.985 0 0);
+        --secondary: oklch(0.97 0 0);
+        --secondary-foreground: oklch(0.205 0 0);
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+        --accent: oklch(0.97 0 0);
+        --accent-foreground: oklch(0.205 0 0);
+        --destructive: oklch(0.577 0.245 27.325);
+        --border: oklch(0.922 0 0);
+        --input: oklch(0.922 0 0);
+        --ring: oklch(0.708 0 0);
+        --chart-1: oklch(0.646 0.222 41.116);
+        --chart-2: oklch(0.6 0.118 184.704);
+        --chart-3: oklch(0.398 0.07 227.392);
+        --chart-4: oklch(0.828 0.189 84.429);
+        --chart-5: oklch(0.769 0.188 70.08);
+        --chart-6: oklch(0.62 0.19 300);
+        --chart-7: oklch(0.65 0.17 145);
+        --chart-8: oklch(0.6 0.2 15);
+        --chart-9: oklch(0.55 0.03 250);
+      }
+
+      .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(0.269 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+      }
+
+      @theme inline {
+        --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --color-chart-6: var(--chart-6);
+        --color-chart-7: var(--chart-7);
+        --color-chart-8: var(--chart-8);
+        --color-chart-9: var(--chart-9);
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-background font-sans text-foreground antialiased">
+    <!-- ============================ Header ============================ -->
+    <header class="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
+      <div class="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
+        <div class="flex items-center gap-2">
+          <span
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+            >
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+            </svg>
+          </span>
+          <span class="font-semibold tracking-tight">Spend Tracer</span>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle theme"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <svg
+              id="icon-sun"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+            <svg
+              id="icon-moon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="hidden h-4 w-4"
+            >
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </button>
+
+          <!-- User menu, rendered open to show the Log out affordance. -->
+          <div class="relative">
+            <button
+              type="button"
+              class="flex items-center gap-2 rounded-lg border border-border bg-background py-1.5 pl-1.5 pr-2 text-sm transition-colors hover:bg-accent"
+            >
+              <span
+                class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground"
+              >
+                SG
+              </span>
+              <span class="hidden font-medium sm:block">Sergey</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4 text-muted-foreground"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div
+              class="absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+            >
+              <div class="px-3 py-2">
+                <p class="text-sm font-medium">Sergey Grigorjev</p>
+                <p class="truncate text-xs text-muted-foreground">sergey@example.com</p>
+              </div>
+              <div class="my-1 h-px bg-border"></div>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="h-4 w-4"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" x2="9" y1="12" y2="12" />
+                </svg>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================= Main ============================= -->
+    <main class="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <!-- Toolbar: heading + period presets + export -->
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight">Expenses</h1>
+          <p class="text-sm text-muted-foreground">September 1 – 20, 2026</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex items-center rounded-lg bg-muted p-1 text-sm" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Day
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              2 weeks
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected="true"
+              class="rounded-md bg-background px-3 py-1.5 font-medium shadow-sm"
+            >
+              Month
+            </button>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" x2="12" y1="15" y2="3" />
+            </svg>
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Total spent</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+            </svg>
+          </div>
+          <div class="mt-2 text-2xl font-semibold tabular-nums">€847.00</div>
+          <div class="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-3.5 w-3.5"
+            >
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
+            12.4% vs last month
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Transactions</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+              <path d="M8 7h8M8 11h8M8 15h5" />
+            </svg>
+          </div>
+          <div class="mt-2 text-2xl font-semibold tabular-nums">34</div>
+          <div class="mt-1 text-xs text-muted-foreground">5 records awaiting confirmation</div>
+        </div>
+
+        <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Daily average</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4 text-muted-foreground"
+            >
+              <rect width="18" height="18" x="3" y="4" rx="2" />
+              <path d="M3 10h18M8 2v4M16 2v4" />
+            </svg>
+          </div>
+          <div class="mt-2 text-2xl font-semibold tabular-nums">€42.35</div>
+          <div class="mt-1 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-3.5 w-3.5"
+            >
+              <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+              <polyline points="16 17 22 17 22 11" />
+            </svg>
+            3.1% vs last month
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Top category</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+              <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
+            <span class="text-2xl font-semibold">Groceries</span>
+          </div>
+          <div class="mt-1 text-xs text-muted-foreground">€268.00 · 31.6% of spend</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid gap-4 lg:grid-cols-3">
+        <!-- Daily bar chart -->
+        <div class="rounded-xl border border-border bg-card p-5 text-card-foreground lg:col-span-2">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-sm font-medium">Daily spending</h2>
+              <p class="text-xs text-muted-foreground">Amount in EUR per day of the period</p>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
+              Spending
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <div class="relative h-56 pl-10">
+              <div class="absolute inset-0 flex flex-col justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">120</span>
+                  <span class="h-px flex-1 bg-border"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">90</span>
+                  <span class="h-px flex-1 bg-border"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">60</span>
+                  <span class="h-px flex-1 bg-border"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">30</span>
+                  <span class="h-px flex-1 bg-border"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">0</span>
+                  <span class="h-px flex-1 bg-border"></span>
+                </div>
+              </div>
+
+              <div id="bars" class="absolute inset-y-0 left-10 right-0 flex items-end gap-[3px]"></div>
+
+              <!-- Static tooltip, as shadcn/Recharts would show on hover. -->
+              <div
+                class="absolute left-[58%] top-0 z-10 -translate-x-1/2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-lg"
+              >
+                <p class="font-medium">September 12</p>
+                <p class="text-muted-foreground">
+                  <span class="font-medium text-foreground">€119.00</span> · 4 transactions
+                </p>
+              </div>
+            </div>
+            <div id="xlabels" class="mt-2 flex pl-10 text-[11px] text-muted-foreground"></div>
+          </div>
+        </div>
+
+        <!-- Category donut -->
+        <div class="rounded-xl border border-border bg-card p-5 text-card-foreground">
+          <div>
+            <h2 class="text-sm font-medium">By category</h2>
+            <p class="text-xs text-muted-foreground">Share of each category over the period</p>
+          </div>
+          <div class="mt-4 flex flex-col items-center gap-5 sm:flex-row lg:flex-col">
+            <div class="relative shrink-0">
+              <svg id="donut" viewBox="0 0 42 42" class="h-40 w-40 -rotate-90"></svg>
+              <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-xs text-muted-foreground">Total</span>
+                <span class="text-lg font-semibold tabular-nums">€847</span>
+              </div>
+            </div>
+            <ul id="legend" class="w-full min-w-0 space-y-2 text-sm"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses table -->
+      <div class="rounded-xl border border-border bg-card text-card-foreground">
+        <div class="flex items-center justify-between p-5 pb-3">
+          <div>
+            <h2 class="text-sm font-medium">Transactions</h2>
+            <p class="text-xs text-muted-foreground">Latest records for the period</p>
+          </div>
+          <span class="text-xs text-muted-foreground">34 records</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr
+                class="border-y border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground"
+              >
+                <th class="px-5 py-2 font-medium">Date</th>
+                <th class="px-3 py-2 font-medium">Description</th>
+                <th class="px-3 py-2 font-medium">Category</th>
+                <th class="px-3 py-2 font-medium">Payer</th>
+                <th class="px-3 py-2 text-right font-medium">Amount</th>
+                <th class="px-5 py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody id="rows" class="divide-y divide-border"></tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-between border-t border-border p-4 text-sm">
+          <span class="text-muted-foreground">Showing 10 of 34</span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              disabled
+              class="rounded-lg border border-border bg-background px-3 py-1.5 font-medium text-muted-foreground opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-border bg-background px-3 py-1.5 font-medium transition-colors hover:bg-accent"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      /* ---------------------------------------------------------------- data */
+      // Daily totals for 1–20 September. Adjust and reload to explore the look.
+      const daily = [12, 48, 23, 0, 87, 34, 15, 62, 41, 0, 28, 119, 45, 33, 22, 74, 51, 18, 96, 39];
+      const scaleMax = 120;
+
+      const categories = [
+        { label: "Groceries", value: 268, color: "var(--chart-1)" },
+        { label: "Transport", value: 142, color: "var(--chart-2)" },
+        { label: "Housing", value: 120, color: "var(--chart-3)" },
+        { label: "Utilities", value: 96, color: "var(--chart-4)" },
+        { label: "Dining", value: 88, color: "var(--chart-5)" },
+        { label: "Entertainment", value: 55, color: "var(--chart-6)" },
+        { label: "Health", value: 41, color: "var(--chart-7)" },
+        { label: "Clothing", value: 22, color: "var(--chart-8)" },
+        { label: "Other", value: 15, color: "var(--chart-9)" },
+      ];
+
+      const expenses = [
+        { date: "Sep 20", desc: "Mercadona, supermarket: milk, bread", cat: "Groceries", c: 1, payer: "Sergey", amount: "€23.40", status: "confirmed" },
+        { date: "Sep 19", desc: "Repsol fuel station, petrol", cat: "Transport", c: 2, payer: "Sergey", amount: "€62.00", status: "confirmed" },
+        { date: "Sep 18", desc: "Farmacia: Paracetamol 500 mg", cat: "Health", c: 7, payer: "Anna", amount: "€8.90", status: "confirmed" },
+        { date: "Sep 18", desc: "Dinner at a restaurant", cat: "Dining", c: 5, payer: "Sergey", amount: "€47.50", status: "pending" },
+        { date: "Sep 17", desc: "Netflix, subscription", cat: "Utilities", c: 4, payer: "Anna", amount: "€13.99", status: "confirmed" },
+        { date: "Sep 16", desc: "IKEA, kitchenware", cat: "Housing", c: 3, payer: "Sergey", amount: "€74.30", status: "confirmed" },
+        { date: "Sep 15", desc: "Cinema, 2 tickets", cat: "Entertainment", c: 6, payer: "Anna", amount: "€21.00", status: "confirmed" },
+        { date: "Sep 14", desc: "Zara, t-shirt", cat: "Clothing", c: 8, payer: "Sergey", amount: "€19.95", status: "rejected" },
+        { date: "Sep 13", desc: "Lidl, weekly groceries", cat: "Groceries", c: 1, payer: "Anna", amount: "€88.12", status: "confirmed" },
+        { date: "Sep 12", desc: "Pharmacy, vitamins", cat: "Health", c: 7, payer: "Sergey", amount: "€32.10", status: "confirmed" },
+      ];
+
+      /* ----------------------------------------------------------- bar chart */
+      const bars = document.getElementById("bars");
+      daily.forEach((value) => {
+        const col = document.createElement("div");
+        col.className = "group relative flex h-full flex-1 items-end";
+        const height = value === 0 ? 0 : Math.max((value / scaleMax) * 100, 1.5);
+        col.innerHTML = `<div class="w-full rounded-t-[3px] bg-chart-1 transition-opacity group-hover:opacity-80" style="height:${height}%"></div>`;
+        bars.appendChild(col);
+      });
+
+      const xlabels = document.getElementById("xlabels");
+      daily.forEach((_, index) => {
+        const day = index + 1;
+        const el = document.createElement("div");
+        el.className = "flex-1 text-center";
+        el.textContent = day === 1 || day % 5 === 0 ? String(day) : "";
+        xlabels.appendChild(el);
+      });
+
+      /* --------------------------------------------------------------- donut */
+      const total = categories.reduce((sum, c) => sum + c.value, 0);
+      const donut = document.getElementById("donut");
+      const legend = document.getElementById("legend");
+
+      const track = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      track.setAttribute("cx", "21");
+      track.setAttribute("cy", "21");
+      track.setAttribute("r", "15.9155");
+      track.setAttribute("fill", "none");
+      track.setAttribute("stroke", "var(--muted)");
+      track.setAttribute("stroke-width", "5");
+      donut.appendChild(track);
+
+      let offset = 0;
+      for (const category of categories) {
+        const pct = (category.value / total) * 100;
+
+        const seg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        seg.setAttribute("cx", "21");
+        seg.setAttribute("cy", "21");
+        seg.setAttribute("r", "15.9155");
+        seg.setAttribute("pathLength", "100");
+        seg.setAttribute("fill", "none");
+        seg.setAttribute("stroke", category.color);
+        seg.setAttribute("stroke-width", "5");
+        seg.setAttribute("stroke-dasharray", `${pct} ${100 - pct}`);
+        seg.setAttribute("stroke-dashoffset", String(-offset));
+        donut.appendChild(seg);
+        offset += pct;
+
+        const li = document.createElement("li");
+        li.className = "flex items-center gap-2";
+        li.innerHTML = `
+          <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${category.color}"></span>
+          <span class="flex-1 truncate">${category.label}</span>
+          <span class="tabular-nums text-muted-foreground">€${category.value}</span>
+          <span class="w-11 text-right text-xs tabular-nums text-muted-foreground">${pct.toFixed(1)}%</span>
+        `;
+        legend.appendChild(li);
+      }
+
+      /* --------------------------------------------------------------- table */
+      const statusStyles = {
+        confirmed: ["Confirmed", "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"],
+        pending: ["Pending", "bg-amber-500/10 text-amber-700 dark:text-amber-400"],
+        rejected: ["Rejected", "bg-muted text-muted-foreground"],
+      };
+
+      const rows = document.getElementById("rows");
+      for (const expense of expenses) {
+        const [statusLabel, statusClass] = statusStyles[expense.status];
+        const tr = document.createElement("tr");
+        tr.className = "transition-colors hover:bg-muted/50";
+        tr.innerHTML = `
+          <td class="whitespace-nowrap px-5 py-3 text-muted-foreground">${expense.date}</td>
+          <td class="px-3 py-3"><span class="line-clamp-1">${expense.desc}</span></td>
+          <td class="px-3 py-3">
+            <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-xs">
+              <span class="h-2 w-2 rounded-full" style="background:var(--chart-${expense.c})"></span>
+              ${expense.cat}
+            </span>
+          </td>
+          <td class="px-3 py-3 text-muted-foreground">${expense.payer}</td>
+          <td class="whitespace-nowrap px-3 py-3 text-right font-medium tabular-nums">${expense.amount}</td>
+          <td class="px-5 py-3">
+            <span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}">
+              ${statusLabel}
+            </span>
+          </td>
+        `;
+        rows.appendChild(tr);
+      }
+
+      /* --------------------------------------------------------- theme toggle */
+      const root = document.documentElement;
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        root.classList.toggle("dark");
+        document.getElementById("icon-sun").classList.toggle("hidden");
+        document.getElementById("icon-moon").classList.toggle("hidden");
+      });
+    </script>
+  </body>
+</html>
