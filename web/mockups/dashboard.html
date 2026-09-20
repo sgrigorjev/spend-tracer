@@ -397,21 +397,21 @@
 
       <!-- Charts -->
       <div class="grid gap-4 lg:grid-cols-3">
-        <!-- Daily bar chart -->
-        <div class="rounded-xl border border-border bg-card p-5 text-card-foreground lg:col-span-2">
+        <!-- Daily spending line chart -->
+        <div class="flex flex-col rounded-xl border border-border bg-card p-5 text-card-foreground lg:col-span-2">
           <div class="flex items-start justify-between">
             <div>
               <h2 class="text-sm font-medium">Daily spending</h2>
               <p class="text-xs text-muted-foreground">Amount in EUR per day of the period</p>
             </div>
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
+              <span class="h-0 w-4 border-t-2 border-dashed border-chart-1"></span>
               Spending
             </div>
           </div>
 
-          <div class="mt-5">
-            <div class="relative h-56 pl-10">
+          <div class="mt-5 flex flex-1 flex-col">
+            <div class="relative min-h-56 flex-1 pl-10">
               <div class="absolute inset-0 flex flex-col justify-between">
                 <div class="flex items-center gap-2">
                   <span class="w-8 text-right text-[11px] tabular-nums text-muted-foreground">120</span>
@@ -435,11 +435,11 @@
                 </div>
               </div>
 
-              <div id="bars" class="absolute inset-y-0 left-10 right-0 flex items-end gap-[3px]"></div>
+              <svg id="chart" class="absolute inset-0 h-full w-full overflow-visible"></svg>
 
               <!-- Static tooltip, as shadcn/Recharts would show on hover. -->
               <div
-                class="absolute left-[58%] top-0 z-10 -translate-x-1/2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-lg"
+                class="absolute left-[58%] -top-2 z-10 -translate-x-1/2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-lg"
               >
                 <p class="font-medium">September 12</p>
                 <p class="text-muted-foreground">
@@ -548,15 +548,41 @@
         { date: "Sep 12", desc: "Pharmacy, vitamins", cat: "Health", c: 7, payer: "Sergey", amount: "€32.10", status: "confirmed" },
       ];
 
-      /* ----------------------------------------------------------- bar chart */
-      const bars = document.getElementById("bars");
-      daily.forEach((value) => {
-        const col = document.createElement("div");
-        col.className = "group relative flex h-full flex-1 items-end";
-        const height = value === 0 ? 0 : Math.max((value / scaleMax) * 100, 1.5);
-        col.innerHTML = `<div class="w-full rounded-t-[3px] bg-chart-1 transition-opacity group-hover:opacity-80" style="height:${height}%"></div>`;
-        bars.appendChild(col);
-      });
+      /* ---------------------------------------------------------- line chart */
+      const chart = document.getElementById("chart");
+
+      function renderChart() {
+        const { width, height } = chart.getBoundingClientRect();
+        if (!width || !height) return;
+        chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+        // The SVG spans the whole plot area; the gutter matches the y-axis label
+        // column (w-8 label + gap-2), so the line lines up with the gridlines.
+        const gutter = 40;
+        const plotWidth = width - gutter;
+
+        const points = daily.map((value, index) => ({
+          x: gutter + ((index + 0.5) / daily.length) * plotWidth,
+          y: height - (value / scaleMax) * height,
+        }));
+
+        const polyline = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+        const dots = points
+          .map(
+            (p) =>
+              `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="var(--background)" stroke="var(--chart-1)" stroke-width="2" />`,
+          )
+          .join("");
+
+        chart.innerHTML =
+          `<polyline points="${polyline}" fill="none" stroke="var(--chart-1)" stroke-width="2" ` +
+          `stroke-dasharray="6 5" stroke-linecap="round" stroke-linejoin="round" />${dots}`;
+      }
+
+      // Redraw on resize and on the first real layout pass, since the Tailwind
+      // browser build applies the height classes after this script runs.
+      new ResizeObserver(renderChart).observe(chart);
+      renderChart();
 
       const xlabels = document.getElementById("xlabels");
       daily.forEach((_, index) => {
