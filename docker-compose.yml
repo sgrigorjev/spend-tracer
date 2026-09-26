@@ -1,13 +1,17 @@
 services:
   bot:
-    build: ./bot
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
     restart: unless-stopped
     env_file: .env
     volumes:
       - ./data:/app/data
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     env_file: .env
     volumes:

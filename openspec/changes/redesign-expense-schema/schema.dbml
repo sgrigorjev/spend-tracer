@@ -1,0 +1,146 @@
+// Spend Tracer data model v2
+// Paste into https://dbdiagram.io to view and lay out the diagram.
+// Source of truth: design.md in this change.
+
+Enum expense_status {
+  pending
+  confirmed
+  rejected
+}
+
+Enum expense_source {
+  text
+  photo
+  voice
+}
+
+Enum paid_at_precision {
+  date
+  minute
+}
+
+Enum family_role {
+  owner
+  member
+}
+
+Enum member_status {
+  invited
+  active
+}
+
+Table users {
+  id integer [pk, increment]
+  email text [unique, not null, note: 'Google account email, gated by the allowlist']
+  name text
+  avatar text
+  telegram_user_id integer [unique, note: 'numeric Telegram id, NULL until linked']
+  display_currency text [not null, default: 'EUR', note: 'ISO 4217, profile setting']
+  display_timezone text [not null, default: 'Europe/Madrid', note: 'IANA, profile setting']
+  created_at text [not null, note: 'ISO-8601 UTC instant']
+  last_login text [not null, note: 'ISO-8601 UTC instant']
+
+  Note: 'A person who registered. Also the attribution target for expenses and messages.'
+}
+
+Table identities {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > users.id]
+  provider text [not null]
+  subject text [not null]
+
+  indexes {
+    (provider, subject) [unique]
+  }
+
+  Note: 'External sign-in identity, separate from the account so one email can carry several providers.'
+}
+
+Table expenses {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > users.id, note: 'owner, always the sender of the message']
+  amount_minor integer [note: 'original amount in minor units, never a float']
+  currency text [note: 'ISO 4217']
+  base_amount_minor integer [note: 'equivalent in base_currency, snapshot at write time']
+  base_currency text [not null, default: 'EUR']
+  fx_rate real [note: 'original -> base rate used at write time']
+  fx_rate_date text [note: 'date of the rate used']
+  category text [note: 'key from the code-level enum, not a table']
+  description text [not null, note: 'human summary; a paid-for-someone-else note lives here']
+  paid_at text [note: 'local ISO with offset, or YYYY-MM-DD when date-only']
+  paid_at_precision paid_at_precision [not null]
+  expense_date text [not null, note: 'local calendar day for grouping and filtering']
+  source expense_source [not null]
+  confidence real [not null]
+  status expense_status [not null, default: 'pending']
+  created_at text [not null, note: 'ISO-8601 UTC instant, when recorded']
+  updated_at text [not null]
+
+  indexes {
+    (user_id, expense_date)
+    (expense_date)
+  }
+
+  Note: 'Ownership never moves. A family grants read visibility, not ownership.'
+}
+
+Table messages {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > users.id]
+  text text [not null]
+  created_at text [not null]
+
+  Note: 'Raw log, only for linked users. Unlinked senders are dropped, not stored.'
+}
+
+Table link_tokens {
+  token text [pk, note: '128-bit base64url, single use, short lifetime']
+  user_id integer [not null, ref: > users.id]
+  created_at text [not null]
+  expires_at text [not null]
+  used_at text
+
+  Note: 'One-time token that links a Telegram account to a signed-in user.'
+}
+
+Table exchange_rates {
+  id integer [pk, increment]
+  base_currency text [not null]
+  quote_currency text [not null]
+  rate real [not null]
+  rate_date text [not null]
+  source text [not null]
+
+  indexes {
+    (base_currency, quote_currency, rate_date) [unique]
+  }
+
+  Note: 'Cache of rates fetched from Frankfurter, so write paths do not call the network each time.'
+}
+
+Table families {
+  id integer [pk, increment]
+  name text
+  owner_id integer [not null, ref: > users.id]
+  created_at text [not null]
+
+  Note: 'A family group. Grants read visibility between its active members.'
+}
+
+Table family_members {
+  id integer [pk, increment]
+  family_id integer [not null, ref: > families.id]
+  user_id integer [not null, ref: > users.id]
+  role family_role [not null]
+  status member_status [not null, note: 'invited grants no access until active']
+  invited_by integer [ref: > users.id]
+  created_at text [not null]
+  joined_at text
+
+  indexes {
+    (family_id, user_id) [unique]
+    user_id [unique]
+  }
+
+  Note: 'Membership with a lifecycle. Visibility is checked against active rows only. The unique index on user_id is partial: WHERE status = active, one active family per user.'
+}

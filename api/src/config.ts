@@ -32,7 +32,10 @@ export const config = {
   // ends when the browser closes.
   sessionMaxAge: Number.parseInt(optional("SESSION_MAX_AGE", "0"), 10),
   port: Number.parseInt(optional("API_PORT", "3000"), 10),
-  dbPath: optional("API_DB_PATH", "data/api.db"),
+  // One shared database file for the bot and the API.
+  dbPath: optional("DB_PATH", "data/spend-tracer.db"),
+  // Bot username used to build the Telegram deep link; empty disables the link URL.
+  telegramBotUsername: optional("TELEGRAM_BOT_USERNAME", ""),
   // Logging mirrors the bot: minimum level, optional file, pretty output.
   logLevel: optional("LOG_LEVEL", "info"),
   logFile: optional("LOG_FILE", ""),
