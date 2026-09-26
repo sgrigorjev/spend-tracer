@@ -25,4 +25,4 @@
 
 - [x] 5.1 Run `npm run typecheck` and `npm run build` from `web/`.
 - [x] 5.2 Screenshot the login page with the Playwright MCP in light and dark, plus the loading and error states, and compare against `web/mockups/login.html`.
-- [ ] 5.3 Sign in with an allowed Google account and confirm the dashboard loads; confirm a disallowed account sees the allowlist message; confirm logout clears the session.
+- [x] 5.3 Sign in with an allowed Google account and confirm the dashboard loads; confirm a disallowed account sees the allowlist message; confirm logout clears the session.
