@@ -74,7 +74,7 @@ Three distinct values, each with one job:
 
 Amounts are integer minor units with an ISO-4217 currency, never `REAL`, to avoid rounding drift in totals. Each row also stores a base-currency equivalent, the rate used and the rate date, all captured at write time so historical reports do not move when rates change. Base currency defaults to EUR. The display currency is a profile setting applied to the aggregate, so only one conversion runs per response. Alternatives: `REAL` amounts, rejected for rounding; read-time per-expense conversion, rejected as more queries and unstable history.
 
-Rates come from Frankfurter, which serves ECB reference data without a key and exposes historical values by date. ECB does not publish on weekends or holidays, so the lookup takes the nearest rate on or before the spend date. An `exchange_rates` cache table stores fetched rates to avoid repeated calls. If no rate is available at write time, the base equivalent stays empty and a later backfill fills it.
+Rates come from Frankfurter, which serves ECB reference data without a key and exposes historical values by date. ECB does not publish on weekends or holidays, so a lookup for such a day returns the nearest published rate, and the row records both the requested date and the date the rate actually came from. An `exchange_rates` cache table is keyed by the requested date, so a repeat lookup is free while a later date still fetches a fresh rate instead of reusing a stale one. If no rate is available at write time, the base equivalent stays empty and a later backfill fills it.
 
 ### Expense status
 
@@ -230,10 +230,11 @@ CREATE TABLE exchange_rates (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   base_currency  TEXT NOT NULL,
   quote_currency TEXT NOT NULL,
+  requested_date TEXT NOT NULL,                 -- the date the rate was asked for
   rate           REAL NOT NULL,
-  rate_date      TEXT NOT NULL,
+  source_date    TEXT NOT NULL,                 -- the date the rate was published
   source         TEXT NOT NULL,
-  UNIQUE (base_currency, quote_currency, rate_date)
+  UNIQUE (base_currency, quote_currency, requested_date)
 );
 
 CREATE TABLE families (

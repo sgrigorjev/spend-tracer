@@ -154,8 +154,16 @@ export interface Store {
   visibleUserIds(viewerId: number): number[];
   resolveScope(viewerId: number, scope: string): number[];
   // exchange rates
-  getLatestRate(base: string, quote: string, date: string): RateLookup | undefined;
-  saveRate(base: string, quote: string, rate: number, date: string, source: string): void;
+  getRateForDate(base: string, quote: string, requestedDate: string): RateLookup | undefined;
+  getNearestRate(base: string, quote: string, requestedDate: string): RateLookup | undefined;
+  saveRate(
+    base: string,
+    quote: string,
+    requestedDate: string,
+    rate: number,
+    sourceDate: string,
+    source: string,
+  ): void;
   close(): void;
 }
 
@@ -224,10 +232,11 @@ CREATE TABLE IF NOT EXISTS exchange_rates (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   base_currency  TEXT NOT NULL,
   quote_currency TEXT NOT NULL,
+  requested_date TEXT NOT NULL,
   rate           REAL NOT NULL,
-  rate_date      TEXT NOT NULL,
+  source_date    TEXT NOT NULL,
   source         TEXT NOT NULL,
-  UNIQUE (base_currency, quote_currency, rate_date)
+  UNIQUE (base_currency, quote_currency, requested_date)
 );
 
 CREATE TABLE IF NOT EXISTS families (
@@ -347,13 +356,18 @@ export function createStore(dbPath: string): Store {
     WHERE fm1.user_id = ? AND fm1.status = 'active' AND fm2.status = 'active'
   `);
 
-  const selectLatestRate = db.prepare(
-    "SELECT rate, rate_date AS date, source FROM exchange_rates " +
-      "WHERE base_currency = ? AND quote_currency = ? AND rate_date <= ? ORDER BY rate_date DESC LIMIT 1",
+  const selectExactRate = db.prepare(
+    "SELECT rate, source_date AS date, source FROM exchange_rates " +
+      "WHERE base_currency = ? AND quote_currency = ? AND requested_date = ?",
+  );
+  const selectNearestRate = db.prepare(
+    "SELECT rate, source_date AS date, source FROM exchange_rates " +
+      "WHERE base_currency = ? AND quote_currency = ? AND requested_date <= ? " +
+      "ORDER BY requested_date DESC LIMIT 1",
   );
   const insertRate = db.prepare(
-    "INSERT OR REPLACE INTO exchange_rates (base_currency, quote_currency, rate, rate_date, source) " +
-      "VALUES (?, ?, ?, ?, ?)",
+    "INSERT OR REPLACE INTO exchange_rates (base_currency, quote_currency, requested_date, rate, source_date, source) " +
+      "VALUES (?, ?, ?, ?, ?, ?)",
   );
 
   function findUserById(id: number): UserRow | undefined {
@@ -558,13 +572,18 @@ export function createStore(dbPath: string): Store {
       throw new ScopeForbiddenError();
     },
 
-    getLatestRate(base, quote, date) {
-      const row = selectLatestRate.get(base, quote, date) as unknown as RateLookup | undefined;
+    getRateForDate(base, quote, requestedDate) {
+      const row = selectExactRate.get(base, quote, requestedDate) as unknown as RateLookup | undefined;
       if (!row) return undefined;
       return { rate: row.rate, date: row.date, source: row.source };
     },
-    saveRate(base, quote, rate, date, source) {
-      insertRate.run(base, quote, rate, date, source);
+    getNearestRate(base, quote, requestedDate) {
+      const row = selectNearestRate.get(base, quote, requestedDate) as unknown as RateLookup | undefined;
+      if (!row) return undefined;
+      return { rate: row.rate, date: row.date, source: row.source };
+    },
+    saveRate(base, quote, requestedDate, rate, sourceDate, source) {
+      insertRate.run(base, quote, requestedDate, rate, sourceDate, source);
     },
 
     close() {

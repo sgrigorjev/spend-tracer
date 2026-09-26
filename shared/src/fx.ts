@@ -9,10 +9,11 @@ export interface HttpResponse {
 export type Fetcher = (url: string) => Promise<HttpResponse>;
 
 /**
- * Look up the rate from `base` to `quote` for a date. The cache is consulted
- * first and returns the latest rate on or before the date, which is what a
- * weekend or holiday needs. On a miss, Frankfurter is queried and the result is
- * cached. An identity conversion returns 1 without touching the network.
+ * Look up the rate from `base` to `quote` for a date. The cache is keyed by the
+ * requested date, so a repeat lookup for the same date is free and a later date
+ * still triggers a fresh fetch instead of reusing a stale rate. On a fetch
+ * failure the nearest earlier cached rate is used as a fallback. An identity
+ * conversion returns 1 without touching the network.
  */
 export async function getRate(
   store: Store,
@@ -23,13 +24,16 @@ export async function getRate(
 ): Promise<RateLookup | null> {
   if (base === quote) return { rate: 1, date, source: "identity" };
 
-  const cached = store.getLatestRate(base, quote, date);
+  const cached = store.getRateForDate(base, quote, date);
   if (cached) return cached;
 
   const fetched = await fetchFrankfurter(base, quote, date, fetchImpl);
-  if (!fetched) return null;
-  store.saveRate(base, quote, fetched.rate, fetched.date, fetched.source);
-  return fetched;
+  if (fetched) {
+    store.saveRate(base, quote, date, fetched.rate, fetched.date, fetched.source);
+    return fetched;
+  }
+
+  return store.getNearestRate(base, quote, date) ?? null;
 }
 
 /** Query Frankfurter for the rate on or before a date. Returns null on any failure. */

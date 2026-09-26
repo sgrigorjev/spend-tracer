@@ -72,11 +72,37 @@ test("a same-currency expense stores rate 1 and an equal base amount", async () 
 test("a foreign-currency expense stores the base amount and rate from the cache", async () => {
   const store = createStore(":memory:");
   const user = newUser(store);
-  store.saveRate("USD", "EUR", 0.9, "2026-09-01", "test");
+  store.saveRate("USD", "EUR", "2026-09-01", 0.9, "2026-09-01", "test");
   const row = await recordToExpense(store, record({ amount: 10, currency: "USD" }), user, "2026-09-01T10:00:00.000Z", "text");
   assert.equal(row.amount_minor, 1000);
   assert.equal(row.base_amount_minor, 900);
   assert.equal(row.fx_rate, 0.9);
   assert.equal(row.fx_rate_date, "2026-09-01");
+  store.close();
+});
+
+test("a later date fetches a fresh rate instead of reusing a cached one", async () => {
+  const store = createStore(":memory:");
+  const first = stubFetcher({ date: "2026-09-01", rates: { EUR: 0.9 } });
+  const second = stubFetcher({ date: "2026-12-30", rates: { EUR: 0.85 } });
+
+  const september = await getRate(store, "USD", "EUR", "2026-09-01", first.fn);
+  assert.equal(september?.rate, 0.9);
+
+  const december = await getRate(store, "USD", "EUR", "2026-12-31", second.fn);
+  assert.equal(december?.rate, 0.85, "a later date must not reuse the September rate");
+  assert.equal(second.calls(), 1);
+
+  store.close();
+});
+
+test("falls back to the nearest earlier rate when the fetch fails", async () => {
+  const store = createStore(":memory:");
+  store.saveRate("USD", "EUR", "2026-09-01", 0.9, "2026-09-01", "test");
+
+  const failing: Fetcher = async () => ({ ok: false, json: async () => ({}) });
+  const rate = await getRate(store, "USD", "EUR", "2026-09-15", failing);
+  assert.deepEqual(rate, { rate: 0.9, date: "2026-09-01", source: "test" });
+
   store.close();
 });
