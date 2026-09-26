@@ -16,7 +16,7 @@ The system SHALL store users, identities, expenses, messages and link tokens in 
 #### Scenario: Concurrent access
 
 - **WHEN** the bot writes an expense while the API reads users
-- **THEN** the database runs in WAL mode with a busy timeout so both operations succeed
+- **THEN** the database uses a rollback journal with a busy timeout so both operations succeed
 
 ### Requirement: User-owned expenses
 

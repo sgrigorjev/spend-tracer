@@ -1,7 +1,7 @@
 ## 1. Shared database foundation
 
 - [x] 1.1 Add a single database path setting read by both services and open one shared SQLite file; verify both services log the same resolved path on startup
-- [x] 1.2 Create the v2 schema for `users`, `identities`, `expenses`, `messages`, `link_tokens`, `exchange_rates`, `families` and `family_members`, with the `expense_date` and active-membership indexes, and enable WAL mode plus a busy timeout; verify tables and indexes exist with `PRAGMA table_info` and `PRAGMA index_list`
+- [x] 1.2 Create the v2 schema for `users`, `identities`, `expenses`, `messages`, `link_tokens`, `exchange_rates`, `families` and `family_members`, with the `expense_date` and active-membership indexes, and enable a rollback journal plus a busy timeout; verify tables and indexes exist with `PRAGMA table_info` and `PRAGMA index_list`
 - [x] 1.3 Add a store test that creating the schema twice is idempotent; verify `node --test test/db.test.ts` passes
 
 ## 2. Money, dates and FX

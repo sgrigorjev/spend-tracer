@@ -82,7 +82,9 @@ Rates come from Frankfurter, which serves ECB reference data without a key and e
 
 ### Concurrency
 
-The database runs in WAL mode with a busy timeout. The bot is the only writer of expenses and messages, the API is the only writer of users and tokens, and both are low frequency, so write contention is negligible. Prepared statements are used throughout.
+The database uses the default rollback journal, `journal_mode = DELETE`, with a busy timeout. The bot is the only writer of expenses and messages, the API is the only writer of users and tokens, and both are low frequency, so write contention is negligible and the busy timeout covers the rare overlap. Prepared statements are used throughout.
+
+WAL was the first choice for its reader and writer concurrency, but it needs shared memory and file locking, which SQLite does not support on network filesystems. The database lives on WSL and is opened from Windows through a UNC path, so WAL makes the file unreadable to standard tools there and buys nothing at this write volume. The rollback journal keeps the file openable everywhere, including the editor used to inspect it.
 
 ## Schema
 
@@ -260,7 +262,7 @@ CREATE UNIQUE INDEX ux_family_members_active
 
 ## Risks / Trade-offs
 
-- A single writer database with two services can still hit `SQLITE_BUSY` under a burst. Mitigated by WAL and a busy timeout, and by keeping writes short.
+- A single writer database with two services can still hit `SQLITE_BUSY` under a burst. Mitigated by a busy timeout and by keeping writes short.
 - Storing `expense_date` denormalizes a derived value that can drift from `paid_at` if a write path forgets to recompute it. Mitigated by computing both in one store function and never updating them independently.
 - Capturing the FX rate at write time makes history stable but means a wrong rate is wrong forever. Mitigated by keeping the rate and its date on the row so it can be audited and corrected.
 - Dropping all existing rows is irreversible. The old files stay on disk untouched until the new schema is verified, so a rollback is a revert of the code plus the old file.

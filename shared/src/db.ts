@@ -278,15 +278,16 @@ function nowIso(): string {
 
 /**
  * Open (creating if needed) the shared SQLite database at `dbPath` and return a
- * store for every table the bot and the API use. WAL mode and a busy timeout
- * let the two services read and write the same file without lock errors.
+ * store for every table the bot and the API use. A rollback journal plus a busy
+ * timeout lets the two services share the file without lock errors, and keeps
+ * it readable by standard tools over WSL and network paths, which WAL is not.
  */
 export function createStore(dbPath: string): Store {
   if (dbPath !== ":memory:") {
     mkdirSync(path.dirname(dbPath), { recursive: true });
   }
   const db = new DatabaseSync(dbPath);
-  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA journal_mode = DELETE");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
   db.exec(CREATE_TABLES);
