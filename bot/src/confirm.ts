@@ -6,10 +6,8 @@ import type { ExpenseInsert, ExpenseSource, ExpenseUpdate, Store, UserRow } from
 import { getRate } from "../../shared/src/fx.ts";
 import { paidAtPrecision, resolveExpenseDate } from "../../shared/src/dates.ts";
 import { fromMinor, toMinor } from "../../shared/src/money.ts";
+import { config } from "./config.ts";
 import { logger } from "./logger.ts";
-
-/** Base currency for the stored equivalent; display currency is a profile setting. */
-const BASE_CURRENCY = "EUR";
 
 /**
  * Build an expense row from an LLM record. The row is attributed to the user
@@ -32,9 +30,9 @@ export async function recordToExpense(
   let fxRate: number | null = null;
   let fxRateDate: string | null = null;
   if (record.amount != null && currency) {
-    const rate = await getRate(store, currency, BASE_CURRENCY, expenseDate);
+    const rate = await getRate(store, currency, config.baseCurrency, expenseDate);
     if (rate) {
-      baseAmountMinor = toMinor(record.amount * rate.rate, BASE_CURRENCY);
+      baseAmountMinor = toMinor(record.amount * rate.rate, config.baseCurrency);
       fxRate = rate.rate;
       fxRateDate = rate.date;
     }
@@ -45,7 +43,7 @@ export async function recordToExpense(
     amount_minor: amountMinor,
     currency,
     base_amount_minor: baseAmountMinor,
-    base_currency: BASE_CURRENCY,
+    base_currency: config.baseCurrency,
     fx_rate: fxRate,
     fx_rate_date: fxRateDate,
     category: record.category,
