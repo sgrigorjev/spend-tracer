@@ -24,8 +24,12 @@ function systemTheme(): Theme {
 }
 
 function storedTheme(): Theme | null {
-  const value = localStorage.getItem(STORAGE_KEY);
-  return value === "light" || value === "dark" ? value : null;
+  try {
+    const value = localStorage.getItem(STORAGE_KEY);
+    return value === "light" || value === "dark" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -46,12 +50,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((current) => {
-      const next = current === "dark" ? "light" : "dark";
+    const next = theme === "dark" ? "light" : "dark";
+    try {
       localStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
-  }, []);
+    } catch {
+      // Storage can be unavailable; the theme still changes for this session.
+    }
+    setTheme(next);
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>

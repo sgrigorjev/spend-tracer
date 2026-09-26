@@ -10,7 +10,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "./components/ui/card";
 
 const ALLOWLIST_MESSAGE = "This account is not on the allowlist.";
@@ -113,15 +112,16 @@ export function Login() {
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Wallet className="h-6 w-6" />
             </span>
-            <CardTitle className="mt-4 text-xl font-semibold tracking-tight">
-              Spend Tracer
-            </CardTitle>
+            <h1 className="mt-4 text-xl font-semibold tracking-tight">Spend Tracer</h1>
             <CardDescription className="mt-1 text-sm">
               Sign in to see your expenses
             </CardDescription>
           </CardHeader>
 
           <CardContent className="px-0 pt-8">
+            <div role="status" aria-live="polite" className="sr-only">
+              {error ? "" : ready ? "Google sign-in is ready." : "Loading Google sign-in."}
+            </div>
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <CircleAlert className="h-4 w-4 shrink-0" />

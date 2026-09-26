@@ -23,7 +23,10 @@
             document.documentElement.classList.add("dark");
           }
         } catch (error) {
-          // Storage can be unavailable; the app then falls back to the system theme.
+          // Storage can be unavailable; fall back to the system preference.
+          if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.classList.add("dark");
+          }
         }
       })();
     </script>
