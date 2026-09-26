@@ -21,7 +21,7 @@ export async function recordToExpense(
   createdAtIso: string,
   source: ExpenseSource,
 ): Promise<ExpenseInsert> {
-  const currency = record.currency ?? null;
+  const currency = record.currency ? record.currency.toUpperCase() : null;
   const amountMinor = record.amount != null && currency ? toMinor(record.amount, currency) : null;
   const paidAt = record.paid_at ?? null;
   const expenseDate = resolveExpenseDate(paidAt, createdAtIso, user.display_timezone);
@@ -60,6 +60,8 @@ export async function recordToExpense(
 interface PendingEntry {
   rowId: number;
   promptMsgId: number;
+  /** Telegram id of the user who created the pending expense. */
+  ownerTelegramId: number | undefined;
 }
 
 /** Short single-line rendering of an expense for chat display. */
@@ -99,7 +101,7 @@ export function createConfirmHandler(bot: Telegraf, store: Store): ConfirmHandle
     const key = `${chatId}:${randomUUID()}`;
     const sent = await ctx.reply(`Похоже на расход:\n${describe(row)}\n\nЗаписать?`, keyboard(key));
     const rowId = store.appendExpense({ ...row, status: "pending" });
-    pending.set(key, { rowId, promptMsgId: sent.message_id });
+    pending.set(key, { rowId, promptMsgId: sent.message_id, ownerTelegramId: ctx.from?.id });
     logger.info({ id: rowId, source: row.source }, "Expense awaiting confirmation");
   };
 
@@ -111,6 +113,10 @@ export function createConfirmHandler(bot: Telegraf, store: Store): ConfirmHandle
     const entry = pending.get(key);
     if (!entry) {
       await ctx.answerCbQuery("Запись уже обработана");
+      return;
+    }
+    if (ctx.from?.id !== entry.ownerTelegramId) {
+      await ctx.answerCbQuery("Это не твоя запись");
       return;
     }
 
@@ -148,6 +154,8 @@ export function createConfirmHandler(bot: Telegraf, store: Store): ConfirmHandle
       editChat.delete(chatId);
       return false;
     }
+    // Only the user who created the pending expense may correct it.
+    if (ctx.from?.id !== entry.ownerTelegramId) return false;
 
     const record = await extractExpense(text, meta);
     if (!record.is_expense || record.amount == null) {

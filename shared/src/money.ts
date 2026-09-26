@@ -34,7 +34,10 @@ export function minorExponent(currency: string): number {
 
 /** Convert a decimal amount to integer minor units, rounding to the nearest. */
 export function toMinor(amount: number, currency: string): number {
-  return Math.round(amount * 10 ** minorExponent(currency));
+  const scaled = amount * 10 ** minorExponent(currency);
+  // Trim binary representation error, e.g. 1.005 * 100 = 100.49999999999999,
+  // so a half-cent rounds up instead of down.
+  return Math.round(Number(scaled.toPrecision(12)));
 }
 
 /** Convert integer minor units back to a decimal amount. */

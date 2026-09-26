@@ -60,3 +60,17 @@ test("resolveUser returns the same user for the same identity", () => {
   assert.equal(second.id, first.id);
   store.close();
 });
+
+test("email lookup and creation are case-insensitive", () => {
+  const store = createStore(":memory:");
+  const created = store.resolveUser({
+    email: "Mixed@Example.com",
+    name: "A",
+    avatar: null,
+    provider: "google",
+    subject: "sub-1",
+  });
+  assert.equal(created.email, "mixed@example.com");
+  assert.equal(store.findUserByEmail("MIXED@example.com")?.id, created.id);
+  store.close();
+});

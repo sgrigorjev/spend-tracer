@@ -27,12 +27,13 @@ export function registerFamilyRoutes(app: FastifyInstance, store: Store): void {
     const user = getSessionUser(request, store);
     if (!user) return reply.code(401).send({ error: "not authenticated" });
     const current = store.getFamilyForUser(user.id);
-    if (!current) return { family: null, members: [], pendingInvitations: [] };
+    const pendingInvitations = store.listPendingInvitations(user.id).map((entry) => entry.family);
+    if (!current) return { family: null, members: [], pendingInvitations };
     return {
       family: current.family,
       membership: current.membership,
       members: store.listFamilyMembers(current.family.id),
-      pendingInvitations: store.listPendingInvitations(user.id).map((entry) => entry.family),
+      pendingInvitations,
     };
   });
 
@@ -50,9 +51,10 @@ export function registerFamilyRoutes(app: FastifyInstance, store: Store): void {
     if (!user) return reply.code(401).send({ error: "not authenticated" });
     const current = store.getFamilyForUser(user.id);
     if (!current) return reply.code(409).send({ error: "no_family" });
-    const { email } = (request.body ?? {}) as { email?: string };
+    const body = (request.body ?? {}) as { email?: unknown };
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     if (!email) return reply.code(400).send({ error: "email is required" });
-    const result = store.inviteByEmail(current.family.id, user.id, email.trim().toLowerCase());
+    const result = store.inviteByEmail(current.family.id, user.id, email);
     if (!result.ok) return sendRefusal(reply, result);
     return { ok: true };
   });

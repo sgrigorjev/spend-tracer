@@ -172,3 +172,20 @@ test("the partial unique index rejects a second active membership", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("an owner leaving with pending invitations dissolves the family", () => {
+  const store = createStore(":memory:");
+  const { ownerId, familyId } = makeFamily(store, "a@example.com", "sub-a");
+  const inviteeId = makeUser(store, "b@example.com", "sub-b");
+  store.inviteByEmail(familyId, ownerId, "b@example.com");
+
+  const left = store.leaveFamily(ownerId);
+  assert.ok(left.ok);
+  assert.equal(store.getFamilyForUser(ownerId), undefined);
+  assert.equal(store.listPendingInvitations(inviteeId).length, 0);
+
+  const accepted = store.acceptInvitation(inviteeId, familyId);
+  assert.equal(accepted.ok, false);
+  assert.equal(accepted.reason, "no_invite");
+  store.close();
+});

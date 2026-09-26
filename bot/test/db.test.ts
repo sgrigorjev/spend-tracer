@@ -81,13 +81,28 @@ test("creating the schema twice is idempotent", () => {
 });
 
 test("setExpenseStatus flips pending to confirmed or rejected", () => {
-  const store = createStore(":memory:");
-  const userId = newUser(store);
-  const id = store.appendExpense(expenseRow(userId, { status: "pending" }));
-  store.setExpenseStatus(id, "confirmed");
-  store.setExpenseStatus(id, "rejected");
-  assert.ok(id > 0);
-  store.close();
+  const dir = mkdtempSync(path.join(os.tmpdir(), "spend-tracer-test-"));
+  const dbPath = path.join(dir, "test.db");
+  try {
+    const store = createStore(dbPath);
+    const userId = newUser(store);
+    const id = store.appendExpense(expenseRow(userId, { status: "pending" }));
+
+    const db = new DatabaseSync(dbPath);
+    db.exec("PRAGMA busy_timeout = 5000");
+    const readStatus = () =>
+      (db.prepare("SELECT status FROM expenses WHERE id = ?").get(id) as { status: string }).status;
+
+    store.setExpenseStatus(id, "confirmed");
+    assert.equal(readStatus(), "confirmed");
+    store.setExpenseStatus(id, "rejected");
+    assert.equal(readStatus(), "rejected");
+
+    db.close();
+    store.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("updateExpense edits selected fields and stores nulls", () => {

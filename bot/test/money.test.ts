@@ -23,3 +23,8 @@ test("round-trips through minor units", () => {
   assert.equal(fromMinor(1250, "EUR"), 12.5);
   assert.equal(fromMinor(2359, "eur"), 23.59);
 });
+
+test("rounds half-cent values up despite binary representation error", () => {
+  assert.equal(toMinor(1.005, "EUR"), 101);
+  assert.equal(toMinor(2.675, "EUR"), 268);
+});

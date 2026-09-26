@@ -326,7 +326,7 @@ export function createStore(dbPath: string): Store {
     "INSERT INTO link_tokens (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
   );
   const selectToken = db.prepare("SELECT * FROM link_tokens WHERE token = ?");
-  const markTokenUsed = db.prepare("UPDATE link_tokens SET used_at = ? WHERE token = ?");
+  const markTokenUsedIfUnused = db.prepare("UPDATE link_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL");
 
   const insertFamily = db.prepare("INSERT INTO families (name, owner_id, created_at) VALUES (?, ?, ?)");
   const selectFamilyById = db.prepare("SELECT * FROM families WHERE id = ?");
@@ -346,6 +346,8 @@ export function createStore(dbPath: string): Store {
     "UPDATE family_members SET status = 'active', joined_at = ? WHERE family_id = ? AND user_id = ?",
   );
   const deleteMember = db.prepare("DELETE FROM family_members WHERE family_id = ? AND user_id = ?");
+  const deleteFamilyMembers = db.prepare("DELETE FROM family_members WHERE family_id = ?");
+  const deleteFamily = db.prepare("DELETE FROM families WHERE id = ?");
   const selectPendingInvites = db.prepare(
     "SELECT * FROM family_members WHERE user_id = ? AND status = 'invited'",
   );
@@ -390,6 +392,7 @@ export function createStore(dbPath: string): Store {
 
     resolveUser({ email, name, avatar, provider, subject }) {
       const now = nowIso();
+      const normalizedEmail = email.trim().toLowerCase();
 
       const identity = selectIdentity.get(provider, subject) as unknown as { user_id: number } | undefined;
       if (identity) {
@@ -397,14 +400,14 @@ export function createStore(dbPath: string): Store {
         return findUserById(identity.user_id)!;
       }
 
-      const existing = selectUserByEmail.get(email) as unknown as UserRow | undefined;
+      const existing = selectUserByEmail.get(normalizedEmail) as unknown as UserRow | undefined;
       if (existing) {
         insertIdentity.run(existing.id, provider, subject);
         updateLastLogin.run(now, existing.id);
         return findUserById(existing.id)!;
       }
 
-      const result = insertUser.run(email, name, avatar, DEFAULT_CURRENCY, DEFAULT_TIMEZONE, now, now);
+      const result = insertUser.run(normalizedEmail, name, avatar, DEFAULT_CURRENCY, DEFAULT_TIMEZONE, now, now);
       const userId = Number(result.lastInsertRowid);
       insertIdentity.run(userId, provider, subject);
       return findUserById(userId)!;
@@ -412,7 +415,7 @@ export function createStore(dbPath: string): Store {
 
     findUserById,
     findUserByEmail(email) {
-      return selectUserByEmail.get(email) as unknown as UserRow | undefined;
+      return selectUserByEmail.get(email.trim().toLowerCase()) as unknown as UserRow | undefined;
     },
     findUserByTelegramId(telegramId) {
       return selectUserByTelegram.get(telegramId) as unknown as UserRow | undefined;
@@ -480,17 +483,39 @@ export function createStore(dbPath: string): Store {
       const taken = selectUserByTelegram.get(telegramUserId) as unknown as UserRow | undefined;
       if (taken && taken.id !== row.user_id) return { ok: false, reason: "telegram_taken" };
 
-      updateTelegram.run(telegramUserId, row.user_id);
-      markTokenUsed.run(nowIso(), token);
+      // Consume the token and bind the account together, so a crash cannot leave
+      // the account linked while the token stays reusable.
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const marked = markTokenUsedIfUnused.run(nowIso(), token);
+        if (marked.changes !== 1) {
+          db.exec("ROLLBACK");
+          return { ok: false, reason: "used" };
+        }
+        updateTelegram.run(telegramUserId, row.user_id);
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        if (String(err).includes("UNIQUE")) return { ok: false, reason: "telegram_taken" };
+        throw err;
+      }
       return { ok: true, userId: row.user_id };
     },
 
     createFamily(ownerId, name) {
       if (activeMembership(ownerId)) return { ok: false, reason: "already_in_family" };
       const now = nowIso();
-      const familyId = Number(insertFamily.run(name, ownerId, now).lastInsertRowid);
-      insertMember.run(familyId, ownerId, "owner", "active", ownerId, now, now);
-      return { ok: true, familyId };
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const familyId = Number(insertFamily.run(name, ownerId, now).lastInsertRowid);
+        insertMember.run(familyId, ownerId, "owner", "active", ownerId, now, now);
+        db.exec("COMMIT");
+        return { ok: true, familyId };
+      } catch (err) {
+        db.exec("ROLLBACK");
+        if (String(err).includes("UNIQUE")) return { ok: false, reason: "already_in_family" };
+        throw err;
+      }
     },
     getFamilyForUser(userId) {
       const membership = activeMembership(userId);
@@ -507,7 +532,7 @@ export function createStore(dbPath: string): Store {
       if (!inviter || inviter.family_id !== familyId || inviter.role !== "owner") {
         return { ok: false, reason: "not_owner" };
       }
-      const target = selectUserByEmail.get(email) as unknown as UserRow | undefined;
+      const target = selectUserByEmail.get(email.trim().toLowerCase()) as unknown as UserRow | undefined;
       if (!target) return { ok: false, reason: "unknown_email" };
       if (activeMembership(target.id)) return { ok: false, reason: "invitee_in_family" };
       const existing = selectMembership.get(familyId, target.id) as unknown as FamilyMemberRow | undefined;
@@ -529,7 +554,13 @@ export function createStore(dbPath: string): Store {
       const invitation = selectMembership.get(familyId, userId) as unknown as FamilyMemberRow | undefined;
       if (!invitation || invitation.status !== "invited") return { ok: false, reason: "no_invite" };
       if (activeMembership(userId)) return { ok: false, reason: "already_in_family" };
-      activateMember.run(nowIso(), familyId, userId);
+      try {
+        activateMember.run(nowIso(), familyId, userId);
+      } catch (err) {
+        // The partial unique index rejects a second active membership on a race.
+        if (String(err).includes("UNIQUE")) return { ok: false, reason: "already_in_family" };
+        throw err;
+      }
       return { ok: true, familyId };
     },
     declineInvitation(userId, familyId) {
@@ -544,6 +575,18 @@ export function createStore(dbPath: string): Store {
       if (membership.role === "owner") {
         const others = countOtherActive.get(membership.family_id, userId) as unknown as { n: number };
         if (others.n > 0) return { ok: false, reason: "owner_has_members" };
+        // Last active member is the owner: dissolve the family so pending
+        // invitations cannot be accepted into an ownerless family.
+        db.exec("BEGIN IMMEDIATE");
+        try {
+          deleteFamilyMembers.run(membership.family_id);
+          deleteFamily.run(membership.family_id);
+          db.exec("COMMIT");
+        } catch (err) {
+          db.exec("ROLLBACK");
+          throw err;
+        }
+        return { ok: true };
       }
       deleteMember.run(membership.family_id, userId);
       return { ok: true };

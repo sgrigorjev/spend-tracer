@@ -20,7 +20,7 @@ export async function getRate(
   base: string,
   quote: string,
   date: string,
-  fetchImpl: Fetcher = (url) => fetch(url),
+  fetchImpl: Fetcher = (url) => fetch(url, { signal: AbortSignal.timeout(5000) }),
 ): Promise<RateLookup | null> {
   if (base === quote) return { rate: 1, date, source: "identity" };
 

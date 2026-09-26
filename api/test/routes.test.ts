@@ -89,3 +89,38 @@ test("the family scope endpoint returns 403 for a member outside the family", as
   await app.close();
   store.close();
 });
+
+test("the family endpoint returns pending invitations for a user with no family", async () => {
+  const { app, store } = await buildApp();
+  const ownerId = store.resolveUser({ email: "a@example.com", name: "A", avatar: null, provider: "google", subject: "sub-a" }).id;
+  const inviteeId = store.resolveUser({ email: "b@example.com", name: "B", avatar: null, provider: "google", subject: "sub-b" }).id;
+  const created = store.createFamily(ownerId, "Home");
+  assert.ok(created.ok);
+  store.inviteByEmail(created.familyId!, ownerId, "b@example.com");
+
+  const res = await app.inject({ method: "GET", url: "/api/family", headers: { "x-test-user": String(inviteeId) } });
+  assert.equal(res.statusCode, 200);
+  const body = res.json() as { family: unknown; pendingInvitations: unknown[] };
+  assert.equal(body.family, null);
+  assert.equal(body.pendingInvitations.length, 1);
+
+  await app.close();
+  store.close();
+});
+
+test("the invite endpoint rejects a non-string email with 400", async () => {
+  const { app, store } = await buildApp();
+  const ownerId = store.resolveUser({ email: "a@example.com", name: "A", avatar: null, provider: "google", subject: "sub-a" }).id;
+  store.createFamily(ownerId, "Home");
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/family/invite",
+    headers: { "x-test-user": String(ownerId) },
+    payload: { email: 42 },
+  });
+  assert.equal(res.statusCode, 400);
+
+  await app.close();
+  store.close();
+});
