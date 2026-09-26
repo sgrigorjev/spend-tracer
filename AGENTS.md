@@ -62,7 +62,8 @@ The MCP profile holds your Google cookies. Keep it local, never commit it, never
 ## Runtime & data
 
 - Config comes from the root `.env`. Required: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY. Optional:
-  DB_PATH (default data/spend-tracer.db) and model overrides.
+  DB_PATH (default data/spend-tracer.db), BASE_CURRENCY (default EUR, fixed for the whole
+  database) and model overrides.
 - Expenses and the raw message log live in one local SQLite DB shared by the bot and the
   API (built-in `node:sqlite`, ExperimentalWarning on startup is expected; do not add
   SQLite dependencies). The schema and store live in `shared/src/db.ts`, re-exported by
