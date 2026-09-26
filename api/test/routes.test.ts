@@ -14,6 +14,7 @@ const { createStore } = await import("../src/db.ts");
 const { registerTelegramRoutes } = await import("../src/routes/telegram.ts");
 const { registerFamilyRoutes } = await import("../src/routes/family.ts");
 const { registerSettingsRoutes } = await import("../src/routes/settings.ts");
+const { protectDocs } = await import("../src/guard.ts");
 
 /** Build a test app where the `x-test-user` header seeds the session. */
 async function buildTestApp() {
@@ -27,6 +28,7 @@ async function buildTestApp() {
   registerTelegramRoutes(app, store);
   registerFamilyRoutes(app, store);
   registerSettingsRoutes(app, store);
+  protectDocs(app, store);
   await app.ready();
   return { app, store };
 }
@@ -163,6 +165,20 @@ test("settings can be read and updated, and invalid values are rejected", async 
 
   const partial = await app.inject({ method: "PATCH", url: "/api/settings", headers, payload: { display_timezone: "Europe/Kyiv" } });
   assert.deepEqual(partial.json(), { display_currency: "USD", display_timezone: "Europe/Kyiv" });
+
+  await app.close();
+  store.close();
+});
+
+test("the API docs are behind the session", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = store.resolveUser({ email: "a@example.com", name: "A", avatar: null, provider: "google", subject: "sub-a" }).id;
+
+  const anonymous = await app.inject({ method: "GET", url: "/api/docs/json" });
+  assert.equal(anonymous.statusCode, 401);
+
+  const signedIn = await app.inject({ method: "GET", url: "/api/docs/json", headers: { "x-test-user": String(userId) } });
+  assert.equal(signedIn.statusCode, 200);
 
   await app.close();
   store.close();

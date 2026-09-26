@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { App } from "../app.ts";
 import type { Store } from "../db.ts";
 import { errorResponses, userSchema } from "../schemas.ts";
-import { requireUser } from "./auth.ts";
+import { requireUser } from "../guard.ts";
 
 export function registerDashboardRoutes(app: App, store: Store): void {
   app.get(

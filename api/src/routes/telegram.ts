@@ -1,7 +1,7 @@
 import type { App } from "../app.ts";
 import { config } from "../config.ts";
 import type { Store } from "../db.ts";
-import { requireUser } from "./auth.ts";
+import { requireUser } from "../guard.ts";
 
 /** How long a Telegram link token stays valid. */
 const TOKEN_TTL_SECONDS = 600;

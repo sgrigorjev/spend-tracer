@@ -32,7 +32,7 @@ Routes declare schemas with zod through `fastify-type-provider-zod`, which gives
 
 ### OpenAPI from the runtime schemas
 
-`@fastify/swagger` builds the document from the route schemas and `@fastify/swagger-ui` serves it at `/api/docs`, with the JSON at `/api/docs/json`. Generating from the same schemas the routes validate with means the document cannot drift from behavior. The document is public for now, since the app is already behind the allowlist and a build-time client needs it without a session. If that is too much exposure, the docs routes can be gated with the same guard later.
+`@fastify/swagger` builds the document from the route schemas and `@fastify/swagger-ui` serves it at `/api/docs`, with the JSON at `/api/docs/json`. Generating from the same schemas the routes validate with means the document cannot drift from behavior. The docs routes sit behind the session, using the same guard as every other protected route, so the API surface is not enumerable by anyone who reaches the app without signing in. A build-time client generator does not need the HTTP route, since the document can be produced by a script that builds the app and reads the schemas directly.
 
 ### Coded error shape
 
@@ -40,11 +40,11 @@ A custom error handler maps validation failures and thrown errors to `{ code: st
 
 ### Settings storage and validation
 
-`updateUserSettings(userId, fields)` in the store updates `display_currency` and `display_timezone` independently, so a partial update leaves the other value alone. The route accepts both fields as optional. The currency must be a supported ISO-4217 code and the timezone a valid IANA zone; both are checked before the write, and an invalid value is a 400 with nothing stored. The display currency is presentation only and never touches the base currency or stored amounts.
+`updateUserSettings(userId, fields)` in the store updates `display_currency` and `display_timezone` independently, so a partial update leaves the other value alone. The route accepts both fields as optional. The currency must be a supported ISO-4217 code and the timezone a valid IANA zone; both are checked before the write, and an invalid value is a 400 with nothing stored. The currency check uses the runtime currency list from `Intl.supportedValuesOf("currency")`, because `Intl.NumberFormat` accepts placeholder codes like `XXX` and `ZZZ`; the timezone check uses `Intl.DateTimeFormat`, which accepts IANA aliases. The display currency is presentation only and never touches the base currency or stored amounts.
 
 ## Risks / Trade-offs
 
-- Public `/api/docs` exposes the API surface to anyone who can reach the app. Mitigated by the existing allowlist and by keeping the document free of secrets; the routes can be gated if the exposure is unwanted.
+- The docs routes reveal the API surface, so they are behind the session guard. A signed-in user can still read the contract, which is intended; the document carries no data or secrets.
 - Validation changes the status code for some malformed requests that previously reached a handler and failed differently. Mitigated by keeping the 400 status the handlers already used and the same body keys, now with a `code` added.
 - New dependencies widen the supply chain. Mitigated by using official Fastify plugins and zod, and by keeping the additions to four packages.
 - Timezone validation by regex is wrong; a valid check uses the platform IANA list, so a regex is not used.
@@ -60,8 +60,3 @@ A custom error handler maps validation failures and thrown errors to `{ code: st
 5. Verify the OpenAPI document lists every route.
 
 Rollback is a revert of the commit; no data migration is involved.
-
-## Open Questions
-
-- The source of the supported currency list. A short curated list is enough for now; a full ISO-4217 table is possible later.
-- Whether `/api/docs` should be gated once the app has any non-family users.

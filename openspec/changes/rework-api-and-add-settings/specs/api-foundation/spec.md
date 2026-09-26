@@ -83,3 +83,8 @@ The system SHALL serve an OpenAPI document that describes every route with its s
 
 - **WHEN** a browser opens the docs route
 - **THEN** the system serves the interactive documentation page
+
+#### Scenario: Docs require a session
+
+- **WHEN** an unauthenticated client requests the OpenAPI document or the docs UI
+- **THEN** the system responds with 401 and serves neither

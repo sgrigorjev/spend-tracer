@@ -3,7 +3,7 @@ import type { App } from "../app.ts";
 import type { Store } from "../db.ts";
 import { errorBody } from "../errors.ts";
 import { errorResponses } from "../schemas.ts";
-import { requireUser } from "./auth.ts";
+import { requireUser } from "../guard.ts";
 
 const settingsSchema = z.object({
   display_currency: z.string(),

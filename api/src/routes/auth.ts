@@ -1,53 +1,11 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { App } from "../app.ts";
 import { isAllowedEmail, verifyGoogleIdToken } from "../auth.ts";
 import { config } from "../config.ts";
-import type { Store, UserRow } from "../db.ts";
-import { ERROR_CODES, errorBody } from "../errors.ts";
+import type { Store } from "../db.ts";
+import { errorBody } from "../errors.ts";
+import { requireUser } from "../guard.ts";
 import { errorResponses, errorSchema, userSchema } from "../schemas.ts";
-
-declare module "@fastify/secure-session" {
-  interface SessionData {
-    userId?: number;
-  }
-}
-
-declare module "fastify" {
-  interface FastifyRequest {
-    user?: UserRow;
-  }
-}
-
-/** The signed-in user for the request, or undefined when unauthenticated. */
-export function getSessionUser(request: FastifyRequest, store: Store): UserRow | undefined {
-  const userId = request.session.get("userId");
-  if (userId === undefined) {
-    return undefined;
-  }
-  const user = store.findUserById(userId);
-  if (!user) {
-    request.session.delete();
-    return undefined;
-  }
-  return user;
-}
-
-/**
- * Hook for protected routes: answers 401 when there is no session, and puts the
- * user on the request so the handler does not resolve it itself. It runs as a
- * preValidation hook, so authentication happens before request validation.
- */
-export function requireUser(store: Store) {
-  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const user = getSessionUser(request, store);
-    if (!user) {
-      await reply.code(401).send(errorBody(ERROR_CODES.unauthorized, "not authenticated"));
-      return;
-    }
-    request.user = user;
-  };
-}
 
 export function registerAuthRoutes(app: App, store: Store): void {
   app.get(

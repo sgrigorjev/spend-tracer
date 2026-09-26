@@ -26,6 +26,7 @@
 
 - [x] 5.1 Confirm every route carries schemas and appears in the OpenAPI document with its request and response shapes; verify `GET /api/docs/json` lists all routes
 - [x] 5.2 Verify the docs UI is served at `/api/docs` and renders the document
+- [x] 5.3 Put the docs routes behind the session guard; verify an unauthenticated request to `/api/docs/json` returns 401 and a signed-in request returns 200
 
 ## 6. Verification
 

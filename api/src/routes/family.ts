@@ -5,7 +5,7 @@ import type { FamilyResult, Store } from "../db.ts";
 import { ScopeForbiddenError } from "../db.ts";
 import { errorBody } from "../errors.ts";
 import { errorResponses, errorSchema } from "../schemas.ts";
-import { requireUser } from "./auth.ts";
+import { requireUser } from "../guard.ts";
 
 /** HTTP status and message for each refusal reason returned by the family store. */
 const REFUSAL: Record<string, { status: number; message: string }> = {

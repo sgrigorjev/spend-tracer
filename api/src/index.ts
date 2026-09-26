@@ -11,6 +11,7 @@ import { registerDashboardRoutes } from "./routes/dashboard.ts";
 import { registerTelegramRoutes } from "./routes/telegram.ts";
 import { registerFamilyRoutes } from "./routes/family.ts";
 import { registerSettingsRoutes } from "./routes/settings.ts";
+import { protectDocs } from "./guard.ts";
 
 // Log fatal errors that would otherwise crash the process with no trace, then
 // exit non-zero so a process supervisor (systemd, Docker) can restart the API.
@@ -52,6 +53,7 @@ registerDashboardRoutes(app, store);
 registerTelegramRoutes(app, store);
 registerFamilyRoutes(app, store);
 registerSettingsRoutes(app, store);
+protectDocs(app, store);
 
 /** Start the server and keep the process alive until a termination signal. */
 async function start(): Promise<void> {
