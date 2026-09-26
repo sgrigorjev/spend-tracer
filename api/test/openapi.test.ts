@@ -50,6 +50,16 @@ test("the OpenAPI document lists every route with schemas", async () => {
 
   assert.deepEqual(Object.keys(doc.paths).sort(), expected);
 
+  // Every operation must document a 200 response with a schema.
+  for (const [path, methods] of Object.entries(doc.paths)) {
+    for (const [method, operation] of Object.entries(methods)) {
+      const responses = (operation as { responses?: Record<string, { content?: Record<string, { schema?: unknown }> }> })
+        .responses;
+      const schema = responses?.["200"]?.content?.["application/json"]?.schema;
+      assert.ok(schema, `${method.toUpperCase()} ${path} should declare a 200 response schema`);
+    }
+  }
+
   const ui = await app.inject({ method: "GET", url: "/api/docs/" });
   assert.equal(ui.statusCode, 200, "the docs UI should be served");
 

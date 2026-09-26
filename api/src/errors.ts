@@ -4,6 +4,7 @@ export const ERROR_CODES = {
   validationFailed: "validation_failed",
   notFound: "not_found",
   internal: "internal_error",
+  requestError: "request_error",
   invalidCurrency: "invalid_currency",
   invalidTimezone: "invalid_timezone",
 } as const;

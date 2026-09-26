@@ -4,7 +4,7 @@ import type { App } from "../app.ts";
 import type { FamilyResult, Store } from "../db.ts";
 import { ScopeForbiddenError } from "../db.ts";
 import { errorBody } from "../errors.ts";
-import { errorResponses, errorSchema } from "../schemas.ts";
+import { errorResponses } from "../schemas.ts";
 import { requireUser } from "../guard.ts";
 
 /** HTTP status and message for each refusal reason returned by the family store. */
@@ -65,6 +65,7 @@ export function registerFamilyRoutes(app: App, store: Store): void {
             members: z.array(membershipSchema),
             pendingInvitations: z.array(familySchema),
           }),
+          ...errorResponses,
         },
       },
     },
@@ -122,6 +123,7 @@ export function registerFamilyRoutes(app: App, store: Store): void {
               }),
             ),
           }),
+          ...errorResponses,
         },
       },
     },
@@ -189,7 +191,7 @@ export function registerFamilyRoutes(app: App, store: Store): void {
     "/api/family/scope",
     {
       preValidation: requireUser(store),
-      schema: { querystring: scopeQuery, response: { 200: z.object({ userIds: z.array(z.number()) }), 403: errorSchema } },
+      schema: { querystring: scopeQuery, response: { 200: z.object({ userIds: z.array(z.number()) }), ...errorResponses } },
     },
     async (request, reply) => {
       const user = request.user!;

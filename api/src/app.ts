@@ -43,7 +43,7 @@ export async function buildApp(logger: FastifyBaseLogger) {
       request.log.error({ err: error }, "Request failed");
       return reply.code(status).send(errorBody(ERROR_CODES.internal, "internal error"));
     }
-    const code = status === 404 ? ERROR_CODES.notFound : "request_error";
+    const code = status === 404 ? ERROR_CODES.notFound : ERROR_CODES.requestError;
     return reply.code(status).send(errorBody(code, err.message));
   });
   app.setNotFoundHandler((_request, reply) => {

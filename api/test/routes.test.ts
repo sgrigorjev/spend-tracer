@@ -160,6 +160,11 @@ test("settings can be read and updated, and invalid values are rejected", async 
   assert.equal(badZone.statusCode, 400);
   assert.equal((badZone.json() as { code: string }).code, "invalid_timezone");
 
+  // A bare offset is accepted by Intl but is not an IANA zone name.
+  const offset = await app.inject({ method: "PATCH", url: "/api/settings", headers, payload: { display_timezone: "+01:00" } });
+  assert.equal(offset.statusCode, 400);
+  assert.equal((offset.json() as { code: string }).code, "invalid_timezone");
+
   const after = await app.inject({ method: "GET", url: "/api/settings", headers });
   assert.deepEqual(after.json(), { display_currency: "USD", display_timezone: "America/New_York" });
 

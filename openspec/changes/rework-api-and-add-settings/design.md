@@ -22,9 +22,9 @@ The API is Fastify 5 with 16 routes across four modules registered from `api/src
 
 ## Decisions
 
-### Authentication guard as a preHandler
+### Authentication guard as a preValidation hook
 
-A `requireUser(store)` factory returns a preHandler that resolves the session, answers 401 when there is none, and sets the user on the request through a `decorateRequest` field. Handlers then read `request.user` and stop resolving the session. The alternative, a plugin scope that registers protected routes under an `onRequest` hook, centralizes more but hides which routes are protected; the explicit per-route preHandler keeps the protection visible next to the route.
+A `requireUser(store)` factory returns a `preValidation` hook that resolves the session, answers 401 when there is none, and sets the user on the request through a `decorateRequest` field. `preValidation` runs before request validation, so an unauthenticated request is rejected with 401 even when its body would fail the schema; a `preHandler` would run after validation and turn that case into a 400. Handlers then read `request.user` and stop resolving the session. The alternative, a plugin scope that registers protected routes under an `onRequest` hook, centralizes more but hides which routes are protected; the explicit per-route hook keeps the protection visible next to the route.
 
 ### zod as the schema type provider
 
