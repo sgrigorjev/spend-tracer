@@ -74,3 +74,23 @@ test("email lookup and creation are case-insensitive", () => {
   assert.equal(store.findUserByEmail("MIXED@example.com")?.id, created.id);
   store.close();
 });
+
+test("updateUserSettings changes only the provided field", () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({
+    email: "a@example.com",
+    name: "A",
+    avatar: null,
+    provider: "google",
+    subject: "sub-1",
+  });
+
+  store.updateUserSettings(user.id, { display_currency: "USD" });
+  assert.equal(store.findUserById(user.id)?.display_currency, "USD");
+  assert.equal(store.findUserById(user.id)?.display_timezone, "Europe/Madrid");
+
+  store.updateUserSettings(user.id, { display_timezone: "Europe/Kyiv" });
+  assert.equal(store.findUserById(user.id)?.display_currency, "USD");
+  assert.equal(store.findUserById(user.id)?.display_timezone, "Europe/Kyiv");
+  store.close();
+});

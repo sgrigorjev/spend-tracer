@@ -1,13 +1,20 @@
-import type { FastifyInstance } from "fastify";
+import { z } from "zod";
+import type { App } from "../app.ts";
 import type { Store } from "../db.ts";
-import { getSessionUser } from "./auth.ts";
+import { errorResponses, userSchema } from "../schemas.ts";
+import { requireUser } from "./auth.ts";
 
-export function registerDashboardRoutes(app: FastifyInstance, store: Store): void {
-  app.get("/api/dashboard", async (request, reply) => {
-    const user = getSessionUser(request, store);
-    if (!user) {
-      return reply.code(401).send({ error: "not authenticated" });
-    }
-    return { user, totalExpenses: null };
-  });
+export function registerDashboardRoutes(app: App, store: Store): void {
+  app.get(
+    "/api/dashboard",
+    {
+      preValidation: requireUser(store),
+      schema: {
+        response: { 200: z.object({ user: userSchema, totalExpenses: z.number().nullable() }), ...errorResponses },
+      },
+    },
+    async (request) => {
+      return { user: request.user!, totalExpenses: null };
+    },
+  );
 }

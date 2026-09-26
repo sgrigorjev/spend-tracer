@@ -31,6 +31,12 @@ export interface ResolveUserInput {
   subject: string;
 }
 
+/** Fields a user may change about how expenses are displayed. */
+export interface UserSettingsUpdate {
+  display_currency?: string;
+  display_timezone?: string;
+}
+
 /** One row in the expenses table. */
 export interface ExpenseRow {
   id: number;
@@ -132,6 +138,7 @@ export interface Store {
   findUserById(id: number): UserRow | undefined;
   findUserByEmail(email: string): UserRow | undefined;
   findUserByTelegramId(telegramId: number): UserRow | undefined;
+  updateUserSettings(userId: number, fields: UserSettingsUpdate): void;
   // expenses
   appendExpense(row: ExpenseInsert): number;
   setExpenseStatus(id: number, status: ExpenseStatus): void;
@@ -419,6 +426,20 @@ export function createStore(dbPath: string): Store {
     },
     findUserByTelegramId(telegramId) {
       return selectUserByTelegram.get(telegramId) as unknown as UserRow | undefined;
+    },
+    updateUserSettings(userId, fields) {
+      const sets: string[] = [];
+      const values: string[] = [];
+      if (fields.display_currency !== undefined) {
+        sets.push("display_currency = ?");
+        values.push(fields.display_currency);
+      }
+      if (fields.display_timezone !== undefined) {
+        sets.push("display_timezone = ?");
+        values.push(fields.display_timezone);
+      }
+      if (sets.length === 0) return;
+      db.prepare(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`).run(...values, userId);
     },
 
     appendExpense(row) {
