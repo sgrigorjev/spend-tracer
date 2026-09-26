@@ -24,7 +24,7 @@ See `proposal.md` for motivation. The relevant current state:
 
 ### SESSION_MAX_AGE in seconds, default 0
 
-Add `sessionMaxAge` to `api/src/config.ts`, parsed from `SESSION_MAX_AGE` with a default of 0. In `api/src/index.ts`, pass `maxAge` to the cookie only when the value is positive, because `@fastify/cookie` treats `maxAge: 0` as an immediate expiry and would delete the cookie on every response. Alternative considered: always pass `maxAge` and special-case zero elsewhere. Rejected, the conditional spread is clearer and keeps the default path identical to today.
+Add `sessionMaxAge` to `api/src/config.ts`, parsed from `SESSION_MAX_AGE` with a default of 0. In `api/src/index.ts`, pass `maxAge` to the cookie and `expiry` to the session only when the value is positive. `maxAge` must be conditional because `@fastify/cookie` treats `maxAge: 0` as an immediate expiry and would delete the cookie on every response. `expiry` must match, because `@fastify/secure-session` caps the session itself at its 1-day default independently of the cookie, so a 30-day cookie alone would still be rejected after a day. Alternative considered: always pass both and special-case zero elsewhere. Rejected, the conditional spread is clearer and keeps the default path identical to today.
 
 Security: a persistent session widens the window in which a stolen cookie is valid. The default of 0 keeps production on session cookies. When TLS is added, a persistent `maxAge` should be paired with `secure: true`.
 

@@ -28,6 +28,9 @@ const app = Fastify({ loggerInstance: logger as unknown as FastifyBaseLogger });
 const sessionKey = createHash("sha256").update(config.sessionSecret).digest();
 app.register(fastifySecureSession, {
   key: sessionKey,
+  // A positive lifetime also caps the session itself, which secure-session
+  // otherwise limits to its 1-day default.
+  ...(config.sessionMaxAge > 0 ? { expiry: config.sessionMaxAge } : {}),
   cookie: {
     path: "/",
     httpOnly: true,

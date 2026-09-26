@@ -1,7 +1,7 @@
 ## 1. API session lifetime
 
 - [x] 1.1 Add `sessionMaxAge` to `api/src/config.ts`, parsed from `SESSION_MAX_AGE` in seconds with a default of 0. Verify `npm run typecheck` passes from `api/`.
-- [x] 1.2 In `api/src/index.ts`, apply `maxAge` to the secure-session cookie only when `sessionMaxAge` is positive, so the default stays a session cookie. Verify the default still produces a session cookie. Security: a persistent cookie widens the stolen-cookie window, so keep the default at 0.
+- [x] 1.2 In `api/src/index.ts`, apply `maxAge` to the secure-session cookie and `expiry` to the session only when `sessionMaxAge` is positive, so the default stays a session cookie. `expiry` must match, since secure-session caps the session at its own 1-day default regardless of the cookie. Verify the default still produces a session cookie. Security: a persistent cookie widens the stolen-cookie window, so keep the default at 0.
 - [x] 1.3 Add `SESSION_MAX_AGE` to `.env.example` with a comment giving the unit and the default. Verify the api starts with the variable present and unset.
 
 ## 2. Local Playwright session
