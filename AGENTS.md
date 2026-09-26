@@ -27,9 +27,10 @@ mechanical output.
 ## Browser preview
 
 `opencode.json` registers the Playwright MCP so the agent can render and inspect UI in a
-real browser. It runs headless on the bundled Chromium (`--browser chromium`), because WSL
-has no system Chrome and the MCP defaults to that channel. Page snapshots go to
-`.playwright-mcp/`, which is gitignored.
+real browser. It launches headed on the bundled Chromium (`--browser chromium`), because WSL
+has no system Chrome and the MCP defaults to that channel, and headed mode lets you sign in
+interactively. A machine without a display must pass `--headless` locally. Page snapshots go
+to `.playwright-mcp/`, which is gitignored.
 
 With the web container up, mockups are served at `http://127.0.0.1:8001/mockups/*.html`.
 Writing screenshots into `web/mockups/` makes them viewable over that same URL, since
@@ -41,6 +42,22 @@ Reinstall the browser with the MCP's own command:
 ```sh
 npx -y @playwright/mcp@latest install-browser chromium
 ```
+
+### Signed-in API access
+
+The MCP profile is persistent, under `~/.cache/ms-playwright-mcp/`, so cookies survive MCP
+restarts. `SESSION_MAX_AGE` in `.env` makes the API session cookie persistent too, set to 30
+days locally. Together they let the agent call the authenticated API without a fresh sign-in
+on every run.
+
+1. The agent opens `http://127.0.0.1:8001/login` in the Playwright browser.
+2. You sign in with Google in that window. The agent cannot do this step.
+3. The agent verifies the session with `GET /api/auth/me` and then uses the API as you.
+
+When a call returns 401, the session is missing or expired. Offer to repeat the sign-in
+instead of failing. The Google cookies usually survive, so it is one click.
+
+The MCP profile holds your Google cookies. Keep it local, never commit it, never share it.
 
 ## Runtime & data
 

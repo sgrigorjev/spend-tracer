@@ -28,6 +28,9 @@ export const config = {
     .map((email) => email.trim().toLowerCase())
     .filter((email) => email.length > 0),
   sessionSecret: required("SESSION_SECRET"),
+  // Session cookie lifetime in seconds. 0 or unset keeps a session cookie that
+  // ends when the browser closes.
+  sessionMaxAge: Number.parseInt(optional("SESSION_MAX_AGE", "0"), 10),
   port: Number.parseInt(optional("API_PORT", "3000"), 10),
   dbPath: optional("API_DB_PATH", "data/api.db"),
   // Logging mirrors the bot: minimum level, optional file, pretty output.
