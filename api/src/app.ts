@@ -30,7 +30,7 @@ export async function buildApp(logger: FastifyBaseLogger) {
     transform: jsonSchemaTransform,
     transformObject: jsonSchemaTransformObject,
   });
-  await app.register(swaggerUi, { routePrefix: "/docs" });
+  await app.register(swaggerUi, { routePrefix: "/api/docs" });
 
   // One coded error shape for validation failures, thrown errors and 404s.
   app.setErrorHandler((error, request, reply) => {

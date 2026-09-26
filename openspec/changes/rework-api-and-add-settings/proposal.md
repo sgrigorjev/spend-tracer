@@ -7,7 +7,7 @@ The API grew one endpoint at a time and now repeats the same session check in tw
 - Add a single authentication guard that resolves the session user and decorates the request, replacing the copy-pasted `getSessionUser` plus 401 block in every protected handler.
 - Define a request and response schema for every route, with one validation path and one coded error shape, replacing the manual `request.body as {...}` casts.
 - Return errors as `{ code, error }`, where `code` is a stable identifier the frontend branches on and `error` is the human message.
-- Publish an OpenAPI document and a `/docs` UI generated from those schemas.
+- Publish an OpenAPI document and a `/api/docs` UI generated from those schemas.
 - Add a user settings API: read and update the preferred display currency and timezone.
 - Add a store method to update a user's display settings.
 - Add `zod`, `fastify-type-provider-zod`, `@fastify/swagger` and `@fastify/swagger-ui` to the API.

@@ -1,7 +1,7 @@
 ## 1. Dependencies and plugins
 
 - [x] 1.1 Add `zod`, `fastify-type-provider-zod`, `@fastify/swagger` and `@fastify/swagger-ui` to `api/package.json`; verify `npm install` succeeds and `npm run typecheck` is clean
-- [x] 1.2 Register the zod type provider, `@fastify/swagger` and `@fastify/swagger-ui` in `api/src/index.ts`; verify the server starts and `GET /docs/json` returns an OpenAPI document
+- [x] 1.2 Register the zod type provider, `@fastify/swagger` and `@fastify/swagger-ui` in `api/src/index.ts`; verify the server starts and `GET /api/docs/json` returns an OpenAPI document
 
 ## 2. Authentication guard
 
@@ -24,8 +24,8 @@
 
 ## 5. OpenAPI coverage
 
-- [x] 5.1 Confirm every route carries schemas and appears in the OpenAPI document with its request and response shapes; verify `GET /docs/json` lists all routes
-- [x] 5.2 Verify the docs UI is served at `/docs` and renders the document
+- [x] 5.1 Confirm every route carries schemas and appears in the OpenAPI document with its request and response shapes; verify `GET /api/docs/json` lists all routes
+- [x] 5.2 Verify the docs UI is served at `/api/docs` and renders the document
 
 ## 6. Verification
 

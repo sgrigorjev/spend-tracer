@@ -25,7 +25,7 @@ test("the OpenAPI document lists every route with schemas", async () => {
   registerSettingsRoutes(app, store);
   await app.ready();
 
-  const res = await app.inject({ method: "GET", url: "/docs/json" });
+  const res = await app.inject({ method: "GET", url: "/api/docs/json" });
   assert.equal(res.statusCode, 200);
   const doc = res.json() as { paths: Record<string, Record<string, unknown>> };
 
@@ -50,7 +50,7 @@ test("the OpenAPI document lists every route with schemas", async () => {
 
   assert.deepEqual(Object.keys(doc.paths).sort(), expected);
 
-  const ui = await app.inject({ method: "GET", url: "/docs/" });
+  const ui = await app.inject({ method: "GET", url: "/api/docs/" });
   assert.equal(ui.statusCode, 200, "the docs UI should be served");
 
   await app.close();
