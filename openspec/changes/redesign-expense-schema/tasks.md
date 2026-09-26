@@ -42,6 +42,6 @@
 
 - [x] 7.1 Run `npm run typecheck` in `bot/` and `api/`; verify both are clean
 - [x] 7.2 Run the targeted tests for storage, auth, linking, dates, FX and family scope; verify they pass
-- [ ] 7.3 Smoke test in a browser and chat: register, link Telegram, send a text, photo and voice expense, and confirm a pending one; verify each row lands under the user with the correct `expense_date`, minor units and base amount
-- [ ] 7.4 Smoke test from an unlinked Telegram account; verify it receives the onboarding reply and that no message or expense row appears
-- [ ] 7.5 Smoke test family sharing: two users with no family see only their own expenses, then form a family and verify each can see the other, and that a non-member scope is rejected
+- [x] 7.3 Smoke test in a browser and chat: register, link Telegram, send a text, photo and voice expense, and confirm a pending one; verify each row lands under the user with the correct `expense_date`, minor units and base amount
+- [x] 7.4 Smoke test from an unlinked Telegram account; verify it receives the onboarding reply and that no message or expense row appears
+- [x] 7.5 Smoke test family sharing: two users with no family see only their own expenses, then form a family and verify each can see the other, and that a non-member scope is rejected
