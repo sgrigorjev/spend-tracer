@@ -28,7 +28,7 @@ export const config = {
   dbPath: optional("DB_PATH", "data/spend-tracer.db"),
   // Currency every expense is normalized to for storage and aggregation. Fixed
   // for the whole database; changing it on live data would mix two bases.
-  baseCurrency: optional("BASE_CURRENCY", "EUR"),
+  baseCurrency: optional("BASE_CURRENCY", "EUR").trim().toUpperCase(),
   // Public web UI URL, shown to unlinked senders so they can register and link.
   webUrl: optional("WEB_URL", "http://127.0.0.1:8001"),
   modelText: optional("OPENAI_MODEL_TEXT", "gpt-4o-mini"),
