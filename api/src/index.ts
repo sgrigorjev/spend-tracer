@@ -33,6 +33,9 @@ app.register(fastifySecureSession, {
     httpOnly: true,
     secure: false,
     sameSite: "lax",
+    // A positive lifetime makes the cookie persistent; 0 keeps it a session
+    // cookie, since @fastify/cookie treats maxAge 0 as an immediate expiry.
+    ...(config.sessionMaxAge > 0 ? { maxAge: config.sessionMaxAge } : {}),
   },
 });
 
