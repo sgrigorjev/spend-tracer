@@ -14,6 +14,14 @@ export interface User {
   avatar: string | null;
 }
 
+/** Carries the HTTP status so callers can tell a rejected account from other failures. */
+export class AuthError extends Error {
+  constructor(readonly status: number) {
+    super(`Sign-in failed (${status})`);
+    this.name = "AuthError";
+  }
+}
+
 interface AuthState {
   user: User | null;
   loading: boolean;
@@ -45,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ idToken }),
     });
     if (!res.ok) {
-      throw new Error("Sign-in failed");
+      throw new AuthError(res.status);
     }
     const data = (await res.json()) as { user: User };
     setUser(data.user);
