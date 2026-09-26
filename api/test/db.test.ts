@@ -20,6 +20,9 @@ test("resolveUser creates a user and identity on first login", () => {
   });
   assert.equal(user.email, "a@example.com");
   assert.ok(user.id > 0);
+  assert.equal(user.display_currency, "EUR");
+  assert.equal(user.display_timezone, "Europe/Madrid");
+  assert.equal(user.telegram_user_id, null);
   store.close();
 });
 

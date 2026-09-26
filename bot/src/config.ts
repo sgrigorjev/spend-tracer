@@ -26,6 +26,8 @@ export const config = {
   openaiApiKey: required("OPENAI_API_KEY"),
   // Path to the SQLite database file; the directory is created on first use.
   dbPath: optional("DB_PATH", "data/spend-tracer.db"),
+  // Public web UI URL, shown to unlinked senders so they can register and link.
+  webUrl: optional("WEB_URL", "http://127.0.0.1:8001"),
   modelText: optional("OPENAI_MODEL_TEXT", "gpt-4o-mini"),
   modelVision: optional("OPENAI_MODEL_VISION", "gpt-4o-mini"),
   transcriptionModel: optional("OPENAI_TRANSCRIPTION_MODEL", "whisper-1"),

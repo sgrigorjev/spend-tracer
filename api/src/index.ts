@@ -8,6 +8,8 @@ import { logger } from "./logger.ts";
 import { createStore } from "./db.ts";
 import { registerAuthRoutes } from "./routes/auth.ts";
 import { registerDashboardRoutes } from "./routes/dashboard.ts";
+import { registerTelegramRoutes } from "./routes/telegram.ts";
+import { registerFamilyRoutes } from "./routes/family.ts";
 
 // Log fatal errors that would otherwise crash the process with no trace, then
 // exit non-zero so a process supervisor (systemd, Docker) can restart the API.
@@ -42,9 +44,12 @@ app.register(fastifySecureSession, {
   },
 });
 
-const store = createStore();
+const store = createStore(config.dbPath);
+logger.info({ dbPath: store.path }, "Database ready");
 registerAuthRoutes(app, store);
 registerDashboardRoutes(app, store);
+registerTelegramRoutes(app, store);
+registerFamilyRoutes(app, store);
 
 /** Start the server and keep the process alive until a termination signal. */
 async function start(): Promise<void> {

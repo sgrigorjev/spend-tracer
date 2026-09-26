@@ -81,12 +81,12 @@ Data lives in a local SQLite database (built-in `node:sqlite`, no server or extr
 Browse it with any SQLite client, e.g.:
 
 ```sh
-sqlite3 data/spend-tracer.db 'SELECT time, amount, currency, category, status FROM expenses ORDER BY id DESC LIMIT 10'
+sqlite3 data/spend-tracer.db 'SELECT expense_date, amount_minor, currency, category, status FROM expenses ORDER BY id DESC LIMIT 10'
 ```
 
 ## Web UI
 
-A Fastify API (`api/`) and a React frontend (`web/`) add browser sign-in on top of the bot. The frontend is a Vite app built into static files, served by nginx, which also proxies `/api/*` to the API container. Sign-in uses Google, gated by an email allowlist. Accounts live in `data/api.db`, separate from the bot's `data/spend-tracer.db`.
+A Fastify API (`api/`) and a React frontend (`web/`) add browser sign-in on top of the bot. The frontend is a Vite app built into static files, served by nginx, which also proxies `/api/*` to the API container. Sign-in uses Google, gated by an email allowlist. The bot and the API share one database, `data/spend-tracer.db`.
 
 Environment variables, in `.env.example`:
 
@@ -94,7 +94,9 @@ Environment variables, in `.env.example`:
 - `GOOGLE_ALLOWED_EMAILS` — comma-separated list of allowed emails
 - `SESSION_SECRET` — cookie signing key
 - `API_PORT` — internal API port (default 3000)
-- `API_DB_PATH` — API database path (default `data/api.db`)
+- `DB_PATH` — shared database path (default `data/spend-tracer.db`)
+- `TELEGRAM_BOT_USERNAME` — bot username used to build the Telegram link
+- `WEB_URL` — public web UI URL shown to unlinked senders
 
 The design is documented in `openspec/`.
 

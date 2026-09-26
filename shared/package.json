@@ -1,0 +1,7 @@
+{
+  "name": "spend-tracer-shared",
+  "version": "1.0.0",
+  "description": "Shared storage schema and helpers for the spend-tracer bot and API",
+  "private": true,
+  "type": "module"
+}

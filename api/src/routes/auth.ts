@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { isAllowedEmail, verifyGoogleIdToken } from "../auth.ts";
 import { config } from "../config.ts";
-import type { AuthStore, UserRow } from "../db.ts";
+import type { Store, UserRow } from "../db.ts";
 
 declare module "@fastify/secure-session" {
   interface SessionData {
@@ -10,7 +10,7 @@ declare module "@fastify/secure-session" {
 }
 
 /** The signed-in user for the request, or undefined when unauthenticated. */
-export function getSessionUser(request: FastifyRequest, store: AuthStore): UserRow | undefined {
+export function getSessionUser(request: FastifyRequest, store: Store): UserRow | undefined {
   const userId = request.session.get("userId");
   if (userId === undefined) {
     return undefined;
@@ -23,7 +23,7 @@ export function getSessionUser(request: FastifyRequest, store: AuthStore): UserR
   return user;
 }
 
-export function registerAuthRoutes(app: FastifyInstance, store: AuthStore): void {
+export function registerAuthRoutes(app: FastifyInstance, store: Store): void {
   app.get("/api/auth/config", async () => {
     return { googleClientId: config.googleClientId };
   });

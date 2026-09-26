@@ -63,19 +63,22 @@ The MCP profile holds your Google cookies. Keep it local, never commit it, never
 
 - Config comes from the root `.env`. Required: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY. Optional:
   DB_PATH (default data/spend-tracer.db) and model overrides.
-- Expenses and the raw message log live in a local SQLite DB (built-in `node:sqlite`,
-  ExperimentalWarning on startup is expected; do not add SQLite dependencies). All writes
-  go through the store in bot/src/db.ts (ExpenseStore): tables `messages` and `expenses`,
+- Expenses and the raw message log live in one local SQLite DB shared by the bot and the
+  API (built-in `node:sqlite`, ExperimentalWarning on startup is expected; do not add
+  SQLite dependencies). The schema and store live in `shared/src/db.ts`, re-exported by
+  `bot/src/db.ts` and `api/src/db.ts`. Tables: `users`, `identities`, `expenses`,
+  `messages`, `link_tokens`, `exchange_rates`, `families`, `family_members`.
   `appendExpense` returns a numeric row id used for later status/field updates.
 - High-confidence expenses are written automatically; uncertain ones are inserted as
   `pending` and confirmed via inline buttons ("Записать / Изменить / Отмена"). Pending
   rows survive restarts in the DB; only the button state is in memory.
+- The bot records only senders whose Telegram account is linked to a registered user.
+  Unlinked senders get a single onboarding reply and nothing is stored for them.
 - data/ and downloads/ are gitignored runtime dirs; never commit their contents.
-  google-service-account.json and the Google keys in .env are unused leftovers from the
-  old Google Sheets backend; leave them alone.
 - Quick map: bot/src/bot.ts pipeline, bot/src/openai.ts LLM extraction,
   bot/src/transcribe.ts voice, bot/src/confirm.ts confirmation flow,
-  bot/src/expenseSchema.ts prompts, bot/src/db.ts storage.
+  bot/src/expenseSchema.ts prompts, shared/src/db.ts storage,
+  api/src/routes/{auth,telegram,family,dashboard}.ts endpoints.
 
 ## Conventions
 

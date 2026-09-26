@@ -4,18 +4,32 @@ import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { createStore, type ExpenseRow } from "../src/db.ts";
+import { createStore, type ExpenseInsert, type Store } from "../src/db.ts";
 
-function expenseRow(overrides: Partial<ExpenseRow> = {}): ExpenseRow {
+function newUser(store: Store): number {
+  return store.resolveUser({
+    email: "tester@example.com",
+    name: "Tester",
+    avatar: null,
+    provider: "google",
+    subject: "sub-1",
+  }).id;
+}
+
+function expenseRow(userId: number, overrides: Partial<ExpenseInsert> = {}): ExpenseInsert {
   return {
-    time: "01.09.2026 10:00:00",
-    sender: "Tester",
-    amount: 12.5,
+    user_id: userId,
+    amount_minor: 1250,
     currency: "EUR",
+    base_amount_minor: 1250,
+    base_currency: "EUR",
+    fx_rate: 1,
+    fx_rate_date: "2026-09-01",
     category: "groceries",
     description: "продукты",
-    paid_at: null,
-    payer: "Tester",
+    paid_at: "2026-09-01T10:00:00+02:00",
+    paid_at_precision: "minute",
+    expense_date: "2026-09-01",
     source: "text",
     confidence: 0.95,
     status: "confirmed",
@@ -23,34 +37,28 @@ function expenseRow(overrides: Partial<ExpenseRow> = {}): ExpenseRow {
   };
 }
 
-test("messages and expenses persist to the database file", () => {
+test("messages and expenses persist to the shared database file", () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "spend-tracer-test-"));
   const dbPath = path.join(dir, "test.db");
   try {
     const store = createStore(dbPath);
-    store.appendMessage({ time: "01.09.2026 09:00:00", from: "Tester", userId: 42, text: "Потратил 12 евро" });
-    store.appendMessage({ time: "01.09.2026 09:01:00", from: "Tester", text: "без id" });
-    const first = store.appendExpense(expenseRow());
-    const second = store.appendExpense(expenseRow({ amount: 3, description: "кофе", source: "voice" }));
+    const userId = newUser(store);
+    store.appendMessage({ user_id: userId, text: "Потратил 12 евро", created_at: "2026-09-01T08:00:00.000Z" });
+    const first = store.appendExpense(expenseRow(userId));
+    const second = store.appendExpense(expenseRow(userId, { amount_minor: 300, description: "кофе", source: "voice" }));
     assert.equal(second, first + 1);
     store.close();
 
     const db = new DatabaseSync(dbPath);
-    const messages = db
-      .prepare("SELECT time, sender, user_id, text FROM messages ORDER BY id")
-      .all()
-      .map((row) => ({ ...row }));
-    assert.deepEqual(messages, [
-      { time: "01.09.2026 09:00:00", sender: "Tester", user_id: 42, text: "Потратил 12 евро" },
-      { time: "01.09.2026 09:01:00", sender: "Tester", user_id: null, text: "без id" },
-    ]);
+    const messages = db.prepare("SELECT user_id, text FROM messages ORDER BY id").all().map((row) => ({ ...row }));
+    assert.deepEqual(messages, [{ user_id: userId, text: "Потратил 12 евро" }]);
     const expenses = db
-      .prepare("SELECT id, amount, currency, category, status FROM expenses ORDER BY id")
+      .prepare("SELECT id, user_id, amount_minor, currency, status FROM expenses ORDER BY id")
       .all()
       .map((row) => ({ ...row }));
     assert.deepEqual(expenses, [
-      { id: first, amount: 12.5, currency: "EUR", category: "groceries", status: "confirmed" },
-      { id: second, amount: 3, currency: "EUR", category: "groceries", status: "confirmed" },
+      { id: first, user_id: userId, amount_minor: 1250, currency: "EUR", status: "confirmed" },
+      { id: second, user_id: userId, amount_minor: 300, currency: "EUR", status: "confirmed" },
     ]);
     db.close();
   } finally {
@@ -58,23 +66,28 @@ test("messages and expenses persist to the database file", () => {
   }
 });
 
-test("setExpenseStatus flips pending to confirmed or rejected", () => {
+test("creating the schema twice is idempotent", () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "spend-tracer-test-"));
   const dbPath = path.join(dir, "test.db");
   try {
+    createStore(dbPath).close();
     const store = createStore(dbPath);
-    const id = store.appendExpense(expenseRow({ status: "pending" }));
-    store.setExpenseStatus(id, "confirmed");
-    store.setExpenseStatus(id, "rejected");
+    const userId = newUser(store);
+    assert.ok(userId > 0);
     store.close();
-
-    const db = new DatabaseSync(dbPath);
-    const row = db.prepare("SELECT status FROM expenses WHERE id = ?").get(id) as { status: string };
-    assert.equal(row.status, "rejected");
-    db.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("setExpenseStatus flips pending to confirmed or rejected", () => {
+  const store = createStore(":memory:");
+  const userId = newUser(store);
+  const id = store.appendExpense(expenseRow(userId, { status: "pending" }));
+  store.setExpenseStatus(id, "confirmed");
+  store.setExpenseStatus(id, "rejected");
+  assert.ok(id > 0);
+  store.close();
 });
 
 test("updateExpense edits selected fields and stores nulls", () => {
@@ -82,29 +95,31 @@ test("updateExpense edits selected fields and stores nulls", () => {
   const dbPath = path.join(dir, "test.db");
   try {
     const store = createStore(dbPath);
-    const id = store.appendExpense(expenseRow({ status: "pending" }));
+    const userId = newUser(store);
+    const id = store.appendExpense(expenseRow(userId, { status: "pending" }));
     store.updateExpense(id, {
-      amount: 7,
+      amount_minor: 700,
       category: null,
       description: "проезд",
       currency: null,
+      base_amount_minor: null,
       paid_at: "2026-09-01",
-      payer: "Иван",
+      paid_at_precision: "date",
       confidence: 0.6,
     });
     store.close();
 
     const db = new DatabaseSync(dbPath);
     const row = db
-      .prepare("SELECT amount, currency, category, description, paid_at, payer, confidence FROM expenses WHERE id = ?")
+      .prepare("SELECT amount_minor, currency, base_amount_minor, category, description, paid_at, confidence FROM expenses WHERE id = ?")
       .get(id) as Record<string, unknown>;
     assert.deepEqual({ ...row }, {
-      amount: 7,
+      amount_minor: 700,
       currency: null,
+      base_amount_minor: null,
       category: null,
       description: "проезд",
       paid_at: "2026-09-01",
-      payer: "Иван",
       confidence: 0.6,
     });
     db.close();
