@@ -26,5 +26,5 @@
 
 ## 6. End-to-end check
 
-- [ ] 6.1 `docker compose up -d --build` and confirm the bot still starts and `web` serves the SPA
-- [ ] 6.2 Sign in with an allowed Google account and confirm the Dashboard stub loads; confirm a disallowed account is rejected and logout clears the session
+- [x] 6.1 `docker compose up -d --build` and confirm the bot still starts and `web` serves the SPA
+- [x] 6.2 Sign in with an allowed Google account and confirm the Dashboard stub loads; confirm a disallowed account is rejected and logout clears the session
