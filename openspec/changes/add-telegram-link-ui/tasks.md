@@ -21,6 +21,6 @@
 
 ## 5. Security, quality and release
 
-- [ ] 5.1 Review the diff for token exposure (no `localStorage`, no `sessionStorage`, no `console` output, no token in the URL bar) and confirm the panel only ever shows the deep link and QR; record the outcome in `review.md`.
+- [x] 5.1 Review the diff for token exposure (no `localStorage`, no `sessionStorage`, no `console` output, no token in the URL bar) and confirm the panel only ever shows the deep link and QR; record the outcome in `review.md`.
 - [x] 5.2 Run `npm run typecheck` in `web/` and in `bot/`; verify both pass before opening the PR.
 - [ ] 5.3 Verify end to end on the stage environment: open settings, scan the QR with the phone, tap Start, confirm the open page flips to the linked state and the bot then records an expense from that account.

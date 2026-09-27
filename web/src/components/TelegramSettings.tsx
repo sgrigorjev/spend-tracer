@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, CircleAlert, ExternalLink, Link2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
@@ -37,6 +37,15 @@ export function TelegramSettings() {
   const [issuing, setIssuing] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
+
+  // Track mount state so an in-flight link request cannot set state after unmount.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   // Read the current link state once, and again whenever the user retries.
   useEffect(() => {
@@ -64,6 +73,7 @@ export function TelegramSettings() {
     try {
       const res = await fetch("/api/telegram/link", { method: "POST" });
       const data = (await res.json().catch(() => null)) as LinkPayload | null;
+      if (!mounted.current) return;
       if (!res.ok || !data) {
         setError("Could not create a Telegram link. Try again.");
         return;
@@ -77,9 +87,9 @@ export function TelegramSettings() {
       setNow(Date.now());
       setPending({ url: data.url, expiresAt: Date.parse(data.expiresAt) });
     } catch {
-      setError("Could not create a Telegram link. Try again.");
+      if (mounted.current) setError("Could not create a Telegram link. Try again.");
     } finally {
-      setIssuing(false);
+      if (mounted.current) setIssuing(false);
     }
   }, []);
 
@@ -91,7 +101,7 @@ export function TelegramSettings() {
 
   // Drive the countdown, and mark the link expired the moment it runs out.
   useEffect(() => {
-    if (!pending) return;
+    if (!pending || expired) return;
     const tick = () => {
       const current = Date.now();
       setNow(current);
@@ -100,7 +110,7 @@ export function TelegramSettings() {
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [pending]);
+  }, [pending, expired]);
 
   // Poll the link status while the panel is open and the token is still valid.
   useEffect(() => {
@@ -168,25 +178,25 @@ export function TelegramSettings() {
                 </AlertDescription>
               </Alert>
             ) : pending ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Scan the code with your phone, or open the link on the device where Telegram is installed, then press
-                  Start in the bot.
-                </p>
-                <div className="w-fit rounded-lg bg-white p-3">
-                  <QRCodeSVG value={pending.url} size={176} marginSize={1} title="Telegram link QR code" />
+              expired ? (
+                <div className="space-y-3">
+                  <Alert variant="destructive">
+                    <CircleAlert className="h-4 w-4 shrink-0" />
+                    <AlertDescription>This link expired. Create a new one to finish linking.</AlertDescription>
+                  </Alert>
+                  <Button type="button" onClick={() => void startLinking()} disabled={issuing}>
+                    <Link2 /> {issuing ? "Creating a link…" : "Create a new link"}
+                  </Button>
                 </div>
-                {expired ? (
-                  <div className="space-y-3">
-                    <Alert variant="destructive">
-                      <CircleAlert className="h-4 w-4 shrink-0" />
-                      <AlertDescription>This link expired. Create a new one to finish linking.</AlertDescription>
-                    </Alert>
-                    <Button type="button" onClick={() => void startLinking()} disabled={issuing}>
-                      <Link2 /> {issuing ? "Creating a link…" : "Create a new link"}
-                    </Button>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Scan the code with your phone, or open the link on the device where Telegram is installed, then
+                    press Start in the bot.
+                  </p>
+                  <div className="w-fit rounded-lg bg-white p-3" role="img" aria-label="QR code for the Telegram link">
+                    <QRCodeSVG value={pending.url} size={176} marginSize={4} />
                   </div>
-                ) : (
                   <div className="flex flex-wrap items-center gap-3">
                     <a href={pending.url} rel="noreferrer" className={buttonVariants()}>
                       <ExternalLink /> Open Telegram
@@ -196,8 +206,8 @@ export function TelegramSettings() {
                       Cancel
                     </Button>
                   </div>
-                )}
-              </div>
+                </div>
+              )
             ) : (
               <Button type="button" onClick={() => void startLinking()} disabled={issuing}>
                 <Link2 /> {issuing ? "Creating a link…" : "Link Telegram"}
