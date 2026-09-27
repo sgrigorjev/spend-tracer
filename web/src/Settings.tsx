@@ -4,6 +4,7 @@ import { useAuth } from "./auth";
 import { Alert, AlertDescription } from "./components/ui/alert";
 import { Button } from "./components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
+import { TelegramSettings } from "./components/TelegramSettings";
 
 const CURRENCIES = Intl.supportedValuesOf("currency");
 
@@ -149,6 +150,8 @@ export function Settings() {
           </form>
         </CardContent>
       </Card>
+
+      <TelegramSettings />
     </section>
   );
 }
