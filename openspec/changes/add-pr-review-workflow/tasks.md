@@ -1,6 +1,6 @@
 ## 1. Reviewer subagent
 
-- [x] 1.1 Add `.opencode/agents/reviewer.md`: a `subagent` on `google/gemini-3.1-pro-preview`, temperature 0.1, `edit: deny`, bash limited to `git *` and `gh *`, with a prompt that reviews the branch against `AGENTS.md`, the `openspec/changes/<name>/` folder and the relevant specs, and reports findings as severity, `file:line`, reason and fix. Verify with `opencode agent list` that `reviewer` is registered.
+- [x] 1.1 Add `.opencode/agents/reviewer.md`: a `subagent` on `google/gemini-3.8-flash`, temperature 0.1, `edit: deny`, bash limited to a read-only git/gh allowlist, with a prompt that reviews the branch against `AGENTS.md`, the `openspec/changes/<name>/` folder and the relevant specs, and reports findings as severity, `file:line`, reason and fix. Verify with `opencode agent list` that `reviewer` is registered.
 
 ## 2. Review command
 

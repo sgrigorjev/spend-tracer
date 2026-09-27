@@ -4,7 +4,7 @@ The repo has no first-pass code review before a PR opens, and the only reviewer 
 
 ## What Changes
 
-- Add a read-only `reviewer` subagent at `.opencode/agents/reviewer.md`, pinned to `google/gemini-3.1-pro-preview`, a different vendor from the default implementation model.
+- Add a read-only `reviewer` subagent at `.opencode/agents/reviewer.md`, pinned to `google/gemini-3.8-flash`, a different vendor from the default implementation model.
 - Add a `/review` command at `.opencode/commands/review.md` that runs the reviewer on the current branch's diff against `origin/main`.
 - Add a rule to `AGENTS.md`: run `/review` before opening a PR, and address or explicitly decline every finding.
 

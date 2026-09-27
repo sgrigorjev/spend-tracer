@@ -1,7 +1,7 @@
 ---
 description: Independent, read-only review of a branch or PR diff; reports findings and never edits
 mode: subagent
-model: google/gemini-3.1-pro-preview
+model: google/gemini-3.8-flash
 temperature: 0.1
 permission:
   edit: deny
@@ -9,14 +9,14 @@ permission:
   task: deny
   bash:
     "*": deny
-    "git diff *": allow
-    "git status *": allow
-    "git log *": allow
-    "git show *": allow
-    "git rev-parse *": allow
-    "git ls-files *": allow
-    "gh pr view *": allow
-    "gh pr diff *": allow
+    "git diff*": allow
+    "git status*": allow
+    "git log*": allow
+    "git show*": allow
+    "git rev-parse*": allow
+    "git ls-files*": allow
+    "gh pr view*": allow
+    "gh pr diff*": allow
 ---
 
 You are an independent code reviewer. You did not write the code under review and you owe it no agreement. Your job is to find what is wrong or missing before a pull request is opened.
