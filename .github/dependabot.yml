@@ -2,6 +2,10 @@
 # Minor and patch updates are grouped per ecosystem to keep the PR count down;
 # major updates arrive on their own. Dependabot PRs are kept out of the release
 # notes by author in .github/release.yml.
+#
+# shared/ is not listed: it has no dependencies and no lockfile.
+# web/Dockerfile's nginx:alpine is a floating tag, so Dependabot cannot track
+# it until the image is pinned to a version tag.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -28,21 +32,6 @@ updates:
       - dependencies
     groups:
       api-minor-patch:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /shared
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-    groups:
-      shared-minor-patch:
         patterns:
           - "*"
         update-types:
@@ -95,3 +84,6 @@ updates:
       actions:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch

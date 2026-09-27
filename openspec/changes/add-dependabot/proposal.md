@@ -5,7 +5,7 @@ Dependencies, container base images and GitHub Actions are bumped by hand, so th
 ## What Changes
 
 - Add `.github/dependabot.yml` with weekly updates for:
-  - npm in `bot/`, `api/`, `shared/` and `web/` (four separate manifests);
+  - npm in `bot/`, `api/` and `web/` (each has its own lockfile; `shared/` is dependency-free and is not listed);
   - Docker base images in `bot/`, `api/` and `web/`;
   - GitHub Actions used by the workflows.
 - Group minor and patch updates per ecosystem to keep the PR count down.

@@ -18,11 +18,11 @@ The repo has four independent npm projects (`bot/`, `api/`, `shared/`, `web/`), 
 
 ### One entry per npm project
 
-Dependabot scans a single manifest per `directory`, and the four projects have separate `package.json` and lockfiles, so each gets its own entry. A single root entry would miss three of them.
+Dependabot scans a single manifest per `directory`. `bot/`, `api/` and `web/` each have their own `package.json` and lockfile, so each gets an entry. A single root entry would miss the three. `shared/` has no dependencies and no lockfile, so it is not listed.
 
 ### Docker per Dockerfile directory
 
-The `docker` ecosystem reads `FROM` lines in the Dockerfiles, so it needs an entry for each of `bot/`, `api/` and `web/`. The `web` Dockerfile has two `FROM` lines (the Node build stage and `nginx:alpine`), and both are covered by the one `web/` entry.
+Dependabot reads `FROM` lines and only updates tags it can interpret as a version. Entries cover `bot/`, `api/` and `web/`. In `web/`, the `node:24-alpine` build stage is trackable, but `nginx:alpine` is a floating tag and is left untouched until it is pinned to a version. That omission is deliberate, not an oversight.
 
 ### Skip docker-compose
 
