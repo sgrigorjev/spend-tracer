@@ -1,7 +1,7 @@
 ---
 description: Independent, read-only review of a branch or PR diff; reports findings and never edits
 mode: subagent
-model: google/gemini-3.8-flash
+model: deepseek/deepseek-v4-pro
 temperature: 0.1
 permission:
   edit: deny

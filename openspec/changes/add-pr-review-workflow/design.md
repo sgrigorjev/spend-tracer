@@ -17,7 +17,7 @@ See `proposal.md` for motivation. What shapes the approach:
 
 **Non-Goals:**
 
-- Replacing CodeRabbit, or reviewing a PR that is already open.
+- Replacing CodeRabbit as the post-PR gate; the reviewer is the pre-PR pass, though it can inspect an open PR's diff on request.
 - A GitHub Actions reviewer; that is a later, separate change.
 - Reviewing product behavior at runtime or running the app.
 
@@ -27,9 +27,9 @@ See `proposal.md` for motivation. What shapes the approach:
 
 The reviewer is an agent, so it has its own system prompt, its own model and its own permissions, and the `/review` command wires `agent: reviewer` with `subtask: true` so the review runs in an isolated context and does not pollute the main session. A plugin would add code and hooks for no gain at this stage. The command stays a thin prompt; the substance lives in the agent.
 
-### A different vendor for the model
+### A different, stronger model
 
-The reviewer runs on `google/gemini-3.8-flash` while implementation runs on `deepseek/deepseek-flash`. Same-vendor review shares the same training biases and tends to agree with the author; a different vendor is the cheap way to buy independence. The pinned model must have a valid credential with quota, otherwise the run fails and the primary model falls back, which defeats the point; a one-line `opencode run -m <model> "ok"` confirms it before relying on it. The model is one line in the agent frontmatter and can be changed or overridden.
+The reviewer runs on `deepseek/deepseek-v4-pro` while implementation runs on `deepseek/deepseek-flash`. The intent was a different vendor for true independence, but the free Google tier cannot sustain an agentic review pass, which makes many model calls, so the reviewer currently uses a stronger model from the same vendor instead, and the vendor switch stays an open question. The pinned model must have quota for many calls, otherwise the run fails and the primary model falls back, which defeats the point; a one-line `opencode run -m <model> "ok"` confirms it before relying on it. The model is one line in the agent frontmatter and can be changed or overridden.
 
 ### Read-only, deny by default
 
@@ -47,9 +47,10 @@ Each finding carries a severity, a `file:line`, why it is wrong, and a concrete 
 
 - **Model cost per run.** → It runs on demand before a PR, not on every save; the model can be swapped for a cheaper one in the agent frontmatter.
 - **False positives or nitpick noise.** → The prompt asks for real problems with a concrete fix and forbids praise padding; findings can be declined with a reason.
-- **The reviewer agreeing with the author anyway.** → A different vendor, a low temperature and an explicit "you did not write this, find what is wrong" instruction reduce it; the standing rules in `AGENTS.md` still apply.
+- **The reviewer agreeing with the author anyway.** → A stronger model than the author's, a low temperature and an explicit "you did not write this, find what is wrong" instruction reduce it, and moving to another vendor later would strengthen it; the standing rules in `AGENTS.md` still apply.
 - **The agent config drifting from the docs.** → Both files are plain markdown under `.opencode/`, reviewed like any other file.
 
 ## Open Questions
 
 - Whether to add a GitHub Actions reviewer later, and whether it reuses this agent.
+- Which vendor to move the reviewer to for full independence, once a credential with quota for an agentic pass exists; the free Google tier cannot sustain one.
