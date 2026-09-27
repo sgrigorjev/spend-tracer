@@ -18,6 +18,8 @@ export interface PeriodRanges {
   preset: PeriodPreset;
   anchor: string;
   period: DateRange;
+  /** Last day of the period's calendar unit; equals the anchor when the unit ends there. */
+  end: string;
   comparison: DateRange;
 }
 
@@ -134,18 +136,29 @@ function comparisonRange(preset: PeriodPreset, anchor: string, period: DateRange
 /** Resolve a preset and anchor into the current range and its comparison range. */
 export function resolvePeriod(preset: PeriodPreset, anchor: string): PeriodRanges {
   const period = currentRange(preset, anchor);
-  return { preset, anchor, period, comparison: comparisonRange(preset, anchor, period) };
+  return { preset, anchor, period, end: periodEnd(preset, anchor), comparison: comparisonRange(preset, anchor, period) };
 }
 
 /**
- * The remaining days of a period's own calendar unit, after the anchor: to the end
- * of the month for `month`, to Sunday for `week`. `day` and `two_weeks` have no
- * remainder inside their unit, so the list is empty.
+ * The last day of a period's calendar unit: the end of the month for `month`,
+ * the Sunday of the week for `week`, and the anchor itself for `day` and
+ * `two_weeks`, whose unit already ends on the anchor.
+ */
+export function periodEnd(preset: PeriodPreset, anchor: string): string {
+  if (preset === "month") return endOfMonth(anchor);
+  if (preset === "week") return addDays(startOfWeek(anchor), 6);
+  return anchor;
+}
+
+/**
+ * The remaining days of a period's own calendar unit, after the anchor: to the
+ * end of the month for `month`, to Sunday for `week`. `day` and `two_weeks` have
+ * no remainder inside their unit, so the list is empty.
  */
 export function remainingDays(preset: PeriodPreset, anchor: string): string[] {
-  if (preset === "month") return eachDay(addDays(anchor, 1), endOfMonth(anchor));
-  if (preset === "week") return eachDay(addDays(anchor, 1), addDays(startOfWeek(anchor), 6));
-  return [];
+  const end = periodEnd(preset, anchor);
+  if (end === anchor) return [];
+  return eachDay(addDays(anchor, 1), end);
 }
 
 /**

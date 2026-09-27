@@ -250,7 +250,7 @@ test("the expenses summary reports the period, pending and the projection", asyn
     count: number;
     pendingCount: number;
     pendingTotal: number;
-    period: { preset: string; from: string; to: string };
+    period: { preset: string; from: string; to: string; end: string };
     comparison: { from: string; to: string };
     daily: Array<{ date: string; amount: number; count: number }>;
     byCategory: Array<{ category: string; amount: number; share: number }>;
@@ -260,7 +260,7 @@ test("the expenses summary reports the period, pending and the projection", asyn
   };
 
   assert.equal(body.currency, "EUR");
-  assert.deepEqual(body.period, { preset: "month", from: "2026-09-01", to: "2026-09-27" });
+  assert.deepEqual(body.period, { preset: "month", from: "2026-09-01", to: "2026-09-27", end: "2026-09-30" });
   assert.deepEqual(body.comparison, { from: "2026-08-01", to: "2026-08-31" });
   assert.equal(body.total, 30);
   assert.equal(body.count, 3);

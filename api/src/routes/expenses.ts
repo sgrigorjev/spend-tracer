@@ -33,7 +33,7 @@ const listQuery = rangeQuery.extend({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-const periodSchema = z.object({ preset: presetSchema, from: z.string(), to: z.string() });
+const periodSchema = z.object({ preset: presetSchema, from: z.string(), to: z.string(), end: z.string() });
 const rangeSchema = z.object({ from: z.string(), to: z.string() });
 const amountSchema = z.object({ category: z.string(), amount: z.number(), share: z.number() });
 
@@ -128,7 +128,7 @@ function buildSummary(store: Store, userId: number, ranges: PeriodRanges, curren
 
   return {
     currency,
-    period: { preset: ranges.preset, from: ranges.period.from, to: ranges.period.to },
+    period: { preset: ranges.preset, from: ranges.period.from, to: ranges.period.to, end: ranges.end },
     comparison: { from: ranges.comparison.from, to: ranges.comparison.to },
     total: toAmount(summary.confirmed_total_minor, rate, currency),
     count: summary.confirmed_count + summary.pending_count,
@@ -186,7 +186,7 @@ export function registerExpensesRoutes(app: App, store: Store): void {
       );
       return {
         currency,
-        period: { preset: ranges.preset, from: ranges.period.from, to: ranges.period.to },
+        period: { preset: ranges.preset, from: ranges.period.from, to: ranges.period.to, end: ranges.end },
         total: page.total,
         items: page.items.map((row) => ({
           id: row.id,
