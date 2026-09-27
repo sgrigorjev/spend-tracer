@@ -89,6 +89,14 @@ Before opening a PR, run the review by spawning the `reviewer` subagent: the Tas
 
 Record the outcome in `openspec/changes/<name>/review.md`: every finding with its disposition, applied in a commit or declined with one concrete reason. The file travels with the change into the archive, so the review leaves a durable trace rather than living only in chat.
 
+## PR watching
+
+`pr-watch` is an external skill (from `claude-settings`) written for a different setup: it assumes a blocking `/loop`, which this environment does not have. Use it with care here.
+
+- Never block the session on CI or CodeRabbit. No `gh pr checks --watch` and no `timeout ... gh pr checks` in the session. Watch in the background instead (a detached `setsid` poller, or a background subagent when `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS` is on) and report on demand.
+- The required gates are `gitleaks` and `semgrep`, enforced by the GitHub ruleset. CodeRabbit is not a required check.
+- Check CodeRabbit only when the PR is otherwise ready to merge. Its state is a commit status, not a check run, and only the `Review completed` description is an actual review; `Review skipped` and `Review rate limited` are not. The free plan allows roughly one review per hour, so an eager loop exhausts it. On a rate limit, stop polling and let the developer decide.
+
 ## Conventions
 
 - Open a PR for every change: short branch off main, small scope, concise English summary
