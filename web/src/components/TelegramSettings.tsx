@@ -155,7 +155,7 @@ export function TelegramSettings() {
         )}
 
         {account === "linked" && (
-          <Alert>
+          <Alert variant="success">
             <Check className="h-4 w-4 shrink-0" />
             <AlertDescription>Telegram is linked. Messages you send the bot are recorded for this account.</AlertDescription>
           </Alert>
