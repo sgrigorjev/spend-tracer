@@ -16,4 +16,4 @@ None. This is developer tooling and documentation, with no change to product beh
 
 - `.opencode/agents/reviewer.md`, `.opencode/commands/review.md`, `AGENTS.md`.
 - No product code, no API and no spec change.
-- Uses the already-authenticated Google provider; no new credential.
+- Uses the Google provider; the reviewer needs a valid Google credential with quota for the pinned model, since a stored credential alone does not guarantee the model is callable.

@@ -4,7 +4,7 @@ See `proposal.md` for motivation. What shapes the approach:
 
 - opencode supports project agents in `.opencode/agents/` and project commands in `.opencode/commands/`, both markdown with frontmatter. An agent can pin its own `model` and restrict its permissions.
 - The repo already uses OpenSpec, so a branch usually carries an `openspec/changes/<name>/` folder with the intent, the acceptance criteria and the tasks, plus `AGENTS.md` conventions. That is the contract a reviewer should check the code against.
-- `opencode auth list` shows Google and DeepSeek already authenticated, so a Google model is available with no new credential.
+- `opencode auth list` shows Google and DeepSeek credentials, but a stored credential is not the same as a usable model: the same check ran the pinned Google model and it returned `API key not valid` and, once, `Quota exceeded ... limit: 0`. The pinned model therefore needs a valid Google credential with quota before the reviewer can run; this is a prerequisite, not a given.
 - CodeRabbit stays the post-PR gate; this is the pre-PR pass, run locally.
 
 ## Goals / Non-Goals
@@ -29,11 +29,11 @@ The reviewer is an agent, so it has its own system prompt, its own model and its
 
 ### A different vendor for the model
 
-The reviewer runs on `google/gemini-3.1-pro-preview` while implementation runs on `deepseek/deepseek-flash`. Same-vendor review shares the same training biases and tends to agree with the author; a different vendor is the cheap way to buy independence. The model is one line in the agent frontmatter and can be changed or overridden.
+The reviewer runs on `google/gemini-3.1-pro-preview` while implementation runs on `deepseek/deepseek-flash`. Same-vendor review shares the same training biases and tends to agree with the author; a different vendor is the cheap way to buy independence. The pinned model must have a valid credential with quota, otherwise the run fails and the primary model falls back, which defeats the point; a one-line `opencode run -m <model> "ok"` confirms it before relying on it. The model is one line in the agent frontmatter and can be changed or overridden.
 
 ### Read-only, deny by default
 
-The agent sets `edit: deny` and restricts bash to `git *` and `gh *`, with everything else denied, so it cannot change the code it is reviewing. It reports findings; a human or the primary agent applies them.
+The agent sets `edit: deny` and allows only read-only bash subcommands (`git diff`, `git status`, `git log`, `git show`, `git rev-parse`, `git ls-files`, `gh pr view`, `gh pr diff`), with everything else denied, so it cannot change the code it is reviewing. It reports findings; a human or the primary agent applies them.
 
 ### Ground the review in the change and the conventions
 
@@ -53,4 +53,3 @@ Each finding carries a severity, a `file:line`, why it is wrong, and a concrete 
 ## Open Questions
 
 - Whether to add a GitHub Actions reviewer later, and whether it reuses this agent.
-- Whether `/review` should default to `origin/main` or take the base ref as an argument for stacked branches.
