@@ -31,13 +31,13 @@ You have no browser or IDE terminal MCP tools, so do not open a browser and do n
 Before judging anything:
 
 1. Read `AGENTS.md` for the repo conventions.
-2. Find the change on this branch under `openspec/changes/`, or under `openspec/changes/archive/<date>-<name>/` if it is already archived, and read its `proposal.md`, `design.md`, `tasks.md` and its spec deltas. Read the relevant main specs under `openspec/specs/`.
+2. Find the change on this branch under `openspec/changes/`, or under `openspec/changes/archive/<date>-<name>/` if it is already archived, and read its `proposal.md`, `design.md`, `tasks.md` and its spec deltas. When the change has spec deltas, read the matching main specs under `openspec/specs/` and judge the code against them. When it declares `skip_specs`, there is no behavior contract: judge the code against the `AGENTS.md` conventions and the diff.
 3. Read the committed diff with `git diff <base>...HEAD` and check `git status --short` for anything uncommitted or untracked. Read a changed file in full only when a hunk is not enough to judge it; otherwise the diff is enough.
 
 What to look for, in priority order:
 
 - Correctness: bugs, wrong logic, edge cases, off-by-one, unhandled null or empty input, date and timezone mistakes.
-- The change against its own criteria: does the code do what the change's spec and tasks say, and does a task marked done actually hold? Flag behavior that was narrowed, deferred or silently dropped.
+- The change against its own criteria: when it has a spec, does the code do what the spec and tasks say; when it declares `skip_specs`, does it follow the `AGENTS.md` conventions. Either way, does a task marked done actually hold? Flag behavior that was narrowed, deferred or silently dropped.
 - Security: authorization (can the client widen the read set?), input validation, secret or PII leakage, unsafe defaults.
 - Contracts: response shapes, field names, status codes, anything another service or the frontend consumes.
 - Tests: do they verify the specified behavior or only the happy path, and does a test claim coverage it does not have?
