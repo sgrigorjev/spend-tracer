@@ -52,3 +52,5 @@ For each finding, give:
 - When relevant, the requirement or convention it violates.
 
 End with a one-line verdict (ready to open a PR, or not, and why) and the list of files you reviewed.
+
+Your caller records your findings in the change's `review.md`; report them and stop.
