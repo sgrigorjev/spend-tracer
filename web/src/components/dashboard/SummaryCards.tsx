@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { categoryLabel, formatCurrency, formatDelta, formatShare } from "../../lib/format";
 import type { Summary } from "./useExpenseDashboard";
@@ -16,6 +16,14 @@ function KpiCard({ label, value, children }: { label: string; value: ReactNode; 
 
 function Delta({ value }: { value: number | null }) {
   if (value === null) return null;
+  if (value === 0) {
+    return (
+      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <Minus className="h-3.5 w-3.5" />
+        {formatDelta(value)} vs previous period
+      </div>
+    );
+  }
   const up = value > 0;
   const Icon = up ? TrendingUp : TrendingDown;
   return (

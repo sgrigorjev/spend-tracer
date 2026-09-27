@@ -13,12 +13,18 @@ export function formatAxisCurrency(amount: number, currency: string): string {
   }).format(amount);
 }
 
-/** A signed percentage delta, one decimal place, e.g. "+12.4%". */
+/**
+ * A signed percentage delta, one decimal place, e.g. "+12.4%". The input is
+ * already a percentage, so 12.4 renders as "+12.4%".
+ */
 export function formatDelta(value: number): string {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-/** A share of the whole as a percentage, e.g. "31.6%". */
+/**
+ * A share of the whole as a percentage, e.g. "31.6%". The input is a fraction,
+ * so 0.316 renders as "31.6%".
+ */
 export function formatShare(share: number): string {
   return `${(share * 100).toFixed(1)}%`;
 }
