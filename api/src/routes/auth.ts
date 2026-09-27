@@ -1,71 +1,70 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import { z } from "zod";
+import type { App } from "../app.ts";
 import { isAllowedEmail, verifyGoogleIdToken } from "../auth.ts";
 import { config } from "../config.ts";
-import type { Store, UserRow } from "../db.ts";
+import type { Store } from "../db.ts";
+import { errorBody } from "../errors.ts";
+import { requireUser } from "../guard.ts";
+import { errorResponses, errorSchema, userSchema } from "../schemas.ts";
 
-declare module "@fastify/secure-session" {
-  interface SessionData {
-    userId?: number;
-  }
-}
+export function registerAuthRoutes(app: App, store: Store): void {
+  app.get(
+    "/api/auth/config",
+    { schema: { response: { 200: z.object({ googleClientId: z.string() }) } } },
+    async () => {
+      return { googleClientId: config.googleClientId };
+    },
+  );
 
-/** The signed-in user for the request, or undefined when unauthenticated. */
-export function getSessionUser(request: FastifyRequest, store: Store): UserRow | undefined {
-  const userId = request.session.get("userId");
-  if (userId === undefined) {
-    return undefined;
-  }
-  const user = store.findUserById(userId);
-  if (!user) {
-    request.session.delete();
-    return undefined;
-  }
-  return user;
-}
+  app.post(
+    "/api/auth/google",
+    {
+      schema: {
+        body: z.object({ idToken: z.string().min(1) }),
+        response: { 200: z.object({ user: userSchema }), 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
+    },
+    async (request, reply) => {
+      let identity;
+      try {
+        identity = await verifyGoogleIdToken(request.body.idToken);
+      } catch {
+        return reply.code(401).send(errorBody("invalid_token", "invalid id token"));
+      }
 
-export function registerAuthRoutes(app: FastifyInstance, store: Store): void {
-  app.get("/api/auth/config", async () => {
-    return { googleClientId: config.googleClientId };
-  });
+      if (!isAllowedEmail(identity.email)) {
+        return reply.code(403).send(errorBody("email_not_allowed", "email not allowed"));
+      }
 
-  app.post("/api/auth/google", async (request, reply) => {
-    const { idToken } = request.body as { idToken?: string };
-    if (!idToken) {
-      return reply.code(400).send({ error: "idToken is required" });
-    }
+      const user = store.resolveUser({
+        email: identity.email,
+        name: identity.name,
+        avatar: identity.avatar,
+        provider: "google",
+        subject: identity.subject,
+      });
+      request.session.set("userId", user.id);
+      return { user };
+    },
+  );
 
-    let identity;
-    try {
-      identity = await verifyGoogleIdToken(idToken);
-    } catch {
-      return reply.code(401).send({ error: "invalid id token" });
-    }
+  app.post(
+    "/api/auth/logout",
+    { schema: { response: { 200: z.object({ ok: z.boolean() }) } } },
+    async (request) => {
+      request.session.delete();
+      return { ok: true };
+    },
+  );
 
-    if (!isAllowedEmail(identity.email)) {
-      return reply.code(403).send({ error: "email not allowed" });
-    }
-
-    const user = store.resolveUser({
-      email: identity.email,
-      name: identity.name,
-      avatar: identity.avatar,
-      provider: "google",
-      subject: identity.subject,
-    });
-    request.session.set("userId", user.id);
-    return { user };
-  });
-
-  app.post("/api/auth/logout", async (request) => {
-    request.session.delete();
-    return { ok: true };
-  });
-
-  app.get("/api/auth/me", async (request, reply) => {
-    const user = getSessionUser(request, store);
-    if (!user) {
-      return reply.code(401).send({ error: "not authenticated" });
-    }
-    return { user };
-  });
+  app.get(
+    "/api/auth/me",
+    {
+      preValidation: requireUser(store),
+      schema: { response: { 200: z.object({ user: userSchema }), ...errorResponses } },
+    },
+    async (request) => {
+      return { user: request.user! };
+    },
+  );
 }

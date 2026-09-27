@@ -1,8 +1,8 @@
 import process from "node:process";
 import { createHash } from "node:crypto";
-import Fastify from "fastify";
 import type { FastifyBaseLogger } from "fastify";
 import fastifySecureSession from "@fastify/secure-session";
+import { buildApp } from "./app.ts";
 import { config } from "./config.ts";
 import { logger } from "./logger.ts";
 import { createStore } from "./db.ts";
@@ -10,6 +10,8 @@ import { registerAuthRoutes } from "./routes/auth.ts";
 import { registerDashboardRoutes } from "./routes/dashboard.ts";
 import { registerTelegramRoutes } from "./routes/telegram.ts";
 import { registerFamilyRoutes } from "./routes/family.ts";
+import { registerSettingsRoutes } from "./routes/settings.ts";
+import { protectDocs } from "./guard.ts";
 
 // Log fatal errors that would otherwise crash the process with no trace, then
 // exit non-zero so a process supervisor (systemd, Docker) can restart the API.
@@ -23,7 +25,7 @@ process.on("unhandledRejection", (reason) => {
   process.exit(1);
 });
 
-const app = Fastify({ loggerInstance: logger as unknown as FastifyBaseLogger });
+const app = await buildApp(logger as unknown as FastifyBaseLogger);
 
 // Derive a stable 32-byte key from the secret so sessions survive restarts.
 // The cookie stays non-secure until TLS is added (out of scope for now).
@@ -50,6 +52,8 @@ registerAuthRoutes(app, store);
 registerDashboardRoutes(app, store);
 registerTelegramRoutes(app, store);
 registerFamilyRoutes(app, store);
+registerSettingsRoutes(app, store);
+protectDocs(app, store);
 
 /** Start the server and keep the process alive until a termination signal. */
 async function start(): Promise<void> {
