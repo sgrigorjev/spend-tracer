@@ -61,7 +61,14 @@ export function DailyChart({
             content={
               <ChartTooltipContent
                 labelFormatter={(value) => formatDay(String(value), { day: "numeric", month: "short" })}
-                formatter={(value) => formatCurrency(Number(value), currency)}
+                formatter={(value, name) => (
+                  <div className="flex w-full justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {config[name as keyof typeof config]?.label ?? name}
+                    </span>
+                    <span className="font-mono tabular-nums">{formatCurrency(Number(value), currency)}</span>
+                  </div>
+                )}
               />
             }
           />
