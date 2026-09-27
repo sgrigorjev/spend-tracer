@@ -37,7 +37,7 @@ The daily chart plots `daily` as the actual series and `projected` as a second, 
 
 ### Payer from the auth context
 
-The dashboard reads only the signed-in user's expenses, so every row's payer is that user; the column is filled from the auth context name, and no API change is needed. When family scope lands, the list endpoint must return a per-row payer and this column switches to it. Recorded as an open question.
+The dashboard reads only the signed-in user's expenses, so every row's payer is that user; the column shows the auth context avatar with the name as its tooltip (initials when there is no image), and no API change is needed. When family scope lands, the list endpoint must return a per-row payer and this column switches to it. Recorded as an open question.
 
 ### The chart spans the whole period, the server names its last day
 

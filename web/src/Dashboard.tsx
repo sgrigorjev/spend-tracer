@@ -10,7 +10,9 @@ import { formatDay } from "./lib/format";
 export function Dashboard() {
   const { user } = useAuth();
   const { preset, setPreset, page, setPage, summary, list, loading, error } = useExpenseDashboard();
-  const payer = user?.name ?? user?.email ?? "";
+
+  // The protected layout only renders this route with a signed-in user.
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
@@ -42,7 +44,7 @@ export function Dashboard() {
             />
             <CategoryDonut summary={summary} />
           </div>
-          <ExpensesTable list={list} page={page} pageSize={PAGE_SIZE} payer={payer} onPage={setPage} />
+          <ExpensesTable list={list} page={page} pageSize={PAGE_SIZE} payer={user} onPage={setPage} />
         </>
       )}
     </div>

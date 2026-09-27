@@ -92,7 +92,7 @@ The dashboard SHALL show the category totals as a donut together with a legend t
 
 ### Requirement: Expenses table
 
-The dashboard SHALL list the period's expenses in the order the API returns them, with the date, description, category, payer, amount and status of each, and SHALL show the payer's name.
+The dashboard SHALL list the period's expenses in the order the API returns them, with the date, description, category, payer, amount and status of each, and SHALL show the payer's avatar with the payer's name as its tooltip.
 
 #### Scenario: Columns
 
@@ -107,7 +107,7 @@ The dashboard SHALL list the period's expenses in the order the API returns them
 #### Scenario: Payer
 
 - **WHEN** the dashboard reads only the signed-in user's expenses
-- **THEN** the payer column shows the signed-in user
+- **THEN** the payer column shows the signed-in user's avatar with their name as a tooltip, falling back to initials when there is no avatar image
 
 ### Requirement: Pagination
 

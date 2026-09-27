@@ -55,3 +55,14 @@ export function categoryColor(category: string, index = 0): string {
 export function categoryLabel(category: string): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
 }
+
+/** Two initials for an avatar fallback, from the name or the email. */
+export function initials(name: string | null, email = ""): string {
+  const source = name?.trim() || email;
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0] ?? "";
+  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
+  const last = parts[parts.length - 1] ?? "";
+  return ((first[0] ?? "") + (last[0] ?? "")).toUpperCase();
+}

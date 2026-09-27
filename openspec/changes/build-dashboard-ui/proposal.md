@@ -8,7 +8,7 @@ The expenses API and the authenticated shell exist, but the dashboard body is st
 - Add four summary cards: total spent, transactions with the pending count, daily average, and top category; the total and daily average carry the delta against the previous period.
 - Add a daily spend line chart that draws the whole period, from its first to its last calendar day, with the projected remaining days from the summary's `projected` series on the second half, and marks the current day.
 - Add a category breakdown as a donut with a legend of amount and share.
-- Add the expenses table (date, description, category, payer, amount, status) with pagination.
+- Add the expenses table (date, description, category, payer, amount, status) with pagination and the payer's avatar.
 - Render the charts with Recharts wrapped by the shadcn `chart` component.
 - Leave CSV export out: it is a follow-up, not part of filling the dashboard.
 

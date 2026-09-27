@@ -1,12 +1,29 @@
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
-import { categoryColor, categoryLabel, formatCurrency, formatDay } from "../../lib/format";
+import { categoryColor, categoryLabel, formatCurrency, formatDay, initials } from "../../lib/format";
 import type { ExpenseList } from "./useExpenseDashboard";
 
 const STATUS: Record<string, { label: string; className: string }> = {
   confirmed: { label: "Confirmed", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
   pending: { label: "Pending", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
 };
+
+/** The payer's avatar, with the name available as a tooltip. */
+function PayerAvatar({ name, email, avatar }: { name: string | null; email: string; avatar: string | null }) {
+  const label = name ?? email;
+  if (avatar) {
+    return <img src={avatar} alt={label} title={label} className="h-6 w-6 rounded-full object-cover" />;
+  }
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground"
+    >
+      {initials(name, email)}
+    </span>
+  );
+}
 
 /** The period's expense rows with pagination. */
 export function ExpensesTable({
@@ -19,7 +36,7 @@ export function ExpensesTable({
   list: ExpenseList;
   page: number;
   pageSize: number;
-  payer: string;
+  payer: { name: string | null; avatar: string | null; email: string };
   onPage: (page: number) => void;
 }) {
   const { items, total, currency } = list;
@@ -75,7 +92,9 @@ export function ExpensesTable({
                         {categoryLabel(item.category)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground">{payer}</td>
+                    <td className="px-3 py-3">
+                      <PayerAvatar name={payer.name} email={payer.email} avatar={payer.avatar} />
+                    </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right font-medium tabular-nums">
                       {item.amount === null ? "—" : formatCurrency(item.amount, currency)}
                     </td>
