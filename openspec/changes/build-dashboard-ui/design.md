@@ -33,7 +33,7 @@ The UI sends `preset` and never a date; the API resolves the current and compari
 
 ### Charts with Recharts and the shadcn wrapper
 
-The daily chart plots `daily` as the actual series and `projected` as a second, dashed series on the same date axis, so the remaining days read as a continuation rather than another measure. The category donut maps the nine categories to the `--chart-N` tokens from `web-design-system`; the app stylesheet now carries them, since until this change they existed only in the mockups. Rationale: Recharts is the documented choice, and the shadcn `chart` wrapper gives the tooltip and legend the app's tokens.
+The daily chart plots `daily` as the actual series and `projected` as a second, dashed series on the same date axis, so the remaining days read as a continuation rather than another measure. The category donut maps the nine categories to the `--chart-N` tokens from `web-design-system`; the app stylesheet now carries them, since until this change they existed only in the mockups. Three tokens are nudged for WCAG contrast (`--chart-3` in dark, `--chart-4` and `--chart-5` in light), where the mockup values are low-contrast on that theme; the rest match the mockup exactly. Rationale: Recharts is the documented choice, and the shadcn `chart` wrapper gives the tooltip and legend the app's tokens.
 
 ### Payer from the auth context
 
