@@ -44,7 +44,7 @@ Alternatives considered: generating the QR in the API (pulls a server library an
 
 ### Poll while the panel is open, then stop
 
-While a pending link is shown, poll `GET /api/telegram/link/status` every 3 seconds. Stop when the link completes, the panel closes, the component unmounts, or the token expires. 3 seconds keeps the desktop flip feeling immediate while adding at most 20 requests over a 600 second token lifetime for one user.
+While a pending link is shown, poll `GET /api/telegram/link/status` every 3 seconds. Stop when the link completes, the panel closes, the component unmounts, or the token expires. 3 seconds keeps the desktop flip feeling immediate while adding about 200 requests over a 600-second token lifetime for one user.
 
 Alternative considered: no polling, refresh manually. Rejected because the page is usually on a different device from the one that completes the link, so the user has no reason to refresh.
 
@@ -84,7 +84,7 @@ The link token is a bearer credential for binding a Telegram account, so it gets
 
 ## Migration Plan
 
-Web-only change; the API, bot and database stay as they are, so there is no data migration and no coordination with the running bot. Deploy the web build and configure `TELEGRAM_BOT_USERNAME` if it is not already set. Roll back by reverting the web build; no state is written by the UI, so rollback is clean.
+Web-only change; the API, bot and database stay as they are, so there is no data migration and no coordination with the running bot. Deploy the web build and configure `TELEGRAM_BOT_USERNAME` if it is not already set. Roll back by reverting the web build; no schema rollback is needed, though any token or account link already created through the API and bot stays in the database.
 
 ## Open Questions
 
