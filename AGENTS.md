@@ -32,6 +32,8 @@ has no system Chrome and the MCP defaults to that channel, and headed mode lets 
 interactively. A machine without a display must pass `--headless` locally. Page snapshots go
 to `.playwright-mcp/`, which is gitignored.
 
+Verify UI changes by the actual render, not by DOM presence: take a screenshot or read `getComputedStyle` and element geometry with the page tools. An element can be present in the accessibility tree and still be invisible (an invalid `stroke` or `color`), clipped, or overlapped by a sibling.
+
 With the web container up, mockups are served at `http://127.0.0.1:8001/mockups/*.html`.
 Writing screenshots into `web/mockups/` makes them viewable over that same URL, since
 nginx already serves the folder.
