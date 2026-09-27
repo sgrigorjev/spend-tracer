@@ -81,6 +81,10 @@ The MCP profile holds your Google cookies. Keep it local, never commit it, never
   bot/src/expenseSchema.ts prompts, shared/src/db.ts storage,
   api/src/routes/{auth,telegram,family,dashboard}.ts endpoints.
 
+## Code review
+
+Before opening a PR, run `/review` on the branch diff. It runs the `reviewer` subagent, a read-only pass on a different model, against `AGENTS.md` and the branch's OpenSpec change. Address every finding, or decline it with one concrete reason; the reviewer never edits, it only reports.
+
 ## Conventions
 
 - Open a PR for every change: short branch off main, small scope, concise English summary
