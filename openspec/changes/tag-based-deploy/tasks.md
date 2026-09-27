@@ -1,3 +1,5 @@
+# tag-based-deploy
+
 ## 1. Deploy script
 
 - [x] 1.1 Rewrite the argument handling in `deploy/deploy.sh`: require a version argument, accept the flags `--force`, `--status` and `--list`, and reject anything else. Verify `deploy/deploy.sh` with no argument prints usage and exits non-zero, and that an unknown flag does the same.
@@ -16,7 +18,7 @@
 
 ## 3. Release and deploy documentation
 
-- [x] 3.1 Rewrite `deploy/README.md` around the release flow: cut a release with `gh release create vX.Y.Z --target main --generate-notes`, deploy a version by running `deploy/deploy.sh vX.Y.Z` from the repo root, and roll back by deploying the previous tag. Verify every command in the document matches the implemented CLI exactly.
+- [x] 3.1 Rewrite `deploy/README.md` around the release flow: cut a release by creating and pushing an annotated tag `vX.Y.Z` and publishing it with `gh release create vX.Y.Z --verify-tag --generate-notes`, deploy a version by running `deploy/deploy.sh vX.Y.Z` from the repo root, and roll back by deploying the previous tag. Verify every command in the document matches the implemented CLI exactly.
 - [x] 3.2 Replace the deployment section in the root `README.md` with the tag-based flow and remove the timer and pull-`main` instructions. Verify no stale auto-deploy wording remains.
 
 ## 4. Server migration

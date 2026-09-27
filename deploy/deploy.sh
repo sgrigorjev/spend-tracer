@@ -52,7 +52,8 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
 
 if [ "$list" = true ]; then
   git fetch --prune --prune-tags --tags origin
-  git tag -l 'v[0-9]*' --sort=-v:refname
+  # Only exact release tags, so prereleases like v1.0.0-rc.1 stay out.
+  git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true
   exit 0
 fi
 
@@ -89,17 +90,15 @@ if ! flock -n 9; then
   exit 1
 fi
 
-# Skip the no-op only when both the recorded version and the checkout agree on
-# the tag. If they diverge (a build failed after checkout), fall through and
-# restore the checkout to the tag.
+# A deploy is a no-op only when a successful deploy is on record and the
+# checkout still matches it. A missing state file means no deploy succeeded yet,
+# so retry; a drifted checkout falls through and is restored to the tag.
 current=""
 if [ -f "$STATE_FILE" ]; then
   current="$(cat "$STATE_FILE")"
-elif checked_out="$(git describe --tags --exact-match 2>/dev/null)"; then
-  current="$checked_out"
 fi
 
-if [ "$current" = "$tag" ] && [ "$force" = false ]; then
+if [ "$force" = false ] && [ "$current" = "$tag" ]; then
   if [ "$(git describe --tags --exact-match 2>/dev/null || true)" = "$tag" ]; then
     echo "already deployed: $tag (use --force to rebuild)"
     exit 0
@@ -115,7 +114,10 @@ fi
 
 echo "Deploying $tag (was ${current:-(unknown)})"
 git -c advice.detachedHead=false checkout --force --detach "refs/tags/$tag"
-docker compose up -d --build
+
+# --wait blocks until every service is running, so a container that fails to
+# start aborts here and the version is not recorded as deployed.
+docker compose up -d --build --wait --wait-timeout 120 --remove-orphans
 
 # Record the version only after the stack came up, so the file always reflects
 # what is actually running. Pruning and status are best-effort from here.

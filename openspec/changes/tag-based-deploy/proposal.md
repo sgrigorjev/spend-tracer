@@ -4,7 +4,7 @@ The server tracks `main` and redeploys automatically every 5 minutes, so every m
 
 ## What Changes
 
-- A release is an annotated semver tag `vX.Y.Z` on GitHub, created manually (`gh release create vX.Y.Z --target main --generate-notes`), which also produces the GitHub Release with generated notes. Tags are never moved.
+- A release is an annotated semver tag `vX.Y.Z` on GitHub, created and pushed by hand and then published as a GitHub Release with generated notes (`git tag -a vX.Y.Z && git push origin vX.Y.Z && gh release create vX.Y.Z --verify-tag --generate-notes`). Tags are never moved.
 - `deploy/deploy.sh <version>` deploys one tag: fetch tags, resolve and validate the version, check out the tag detached, rebuild and restart the stack, then record the deployed version. Repeated deploys of the same tag are a no-op unless `--force`.
 - The version argument accepts `1.0.0` or `v1.0.0`; both resolve to `refs/tags/v1.0.0`.
 - Add `--status` (current tag plus `docker compose ps`) and `--list` (recent release tags) subcommands, and a lock so two deploys cannot overlap.

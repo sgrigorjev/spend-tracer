@@ -36,7 +36,7 @@ The argument is matched against a strict `^v?[0-9]+\.[0-9]+\.[0-9]+$` pattern an
 
 ### Deployed version recorded in a state file
 
-`.deployed-version` (gitignored) holds the tag of the last successful deploy and is the source of truth for the no-op guard and `--status`. It is written only after `docker compose up` succeeds, so it always reflects what actually came up, not just what was checked out. `git describe --tags --exact-match HEAD` is used as a cross-check when the file is missing.
+`.deployed-version` (gitignored) holds the tag of the last successful deploy and is the source of truth for the no-op guard and `--status`. It is written only after the stack comes up, so it always reflects what actually came up, not just what was checked out. A missing file means no deploy has succeeded yet, so the script retries rather than treating a bare checkout as done. `git describe --tags --exact-match HEAD` only cross-checks that the checkout has not drifted off the recorded version; it is never proof of a deploy.
 
 ### Serialize with flock
 

@@ -4,13 +4,15 @@ Deployment is a pull-based rollout of one release tag. The server checks out the
 
 ## Releases
 
-A release is an annotated semver tag `vX.Y.Z` published as a GitHub Release. Cut one from a ready `main`:
+A release is an annotated semver tag `vX.Y.Z` published as a GitHub Release. Create and push the annotated tag first, then let `gh` publish the release for that exact tag:
 
 ```sh
-gh release create v1.0.0 --target main --generate-notes
+git tag -a v1.0.0 -m "v1.0.0"
+git push origin v1.0.0
+gh release create v1.0.0 --verify-tag --generate-notes
 ```
 
-Tags are immutable. Never move, delete or reuse a published tag; ship a fix as a new version.
+`--verify-tag` makes `gh` fail if the tag is missing, so the release never creates a lightweight tag of its own. Tags are immutable. Never move, delete or reuse a published tag; ship a fix as a new version.
 
 ## Deploy a version
 
@@ -41,6 +43,7 @@ cp .env.example .env
 nano .env
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything
+mkdir -p data                    # gitignored, absent on a fresh clone
 sudo chown -R 1000:1000 data/    # let the non-root containers write to data/
 
 deploy/deploy.sh v1.0.0

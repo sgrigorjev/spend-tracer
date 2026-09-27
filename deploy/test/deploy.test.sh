@@ -42,8 +42,9 @@ git -C "$WORK/src" tag -a v1.0.0 -m "v1.0.0"
 echo "app v2" > "$WORK/src/app.txt"
 git -C "$WORK/src" commit -qam "v2"
 git -C "$WORK/src" tag -a v1.1.0 -m "v1.1.0"
+git -C "$WORK/src" tag -a v2.0.0-rc.1 -m "v2.0.0-rc.1"
 git -C "$WORK/src" remote add origin "$WORK/remote.git"
-git -C "$WORK/src" push -q origin main v1.0.0 v1.1.0
+git -C "$WORK/src" push -q origin main v1.0.0 v1.1.0 v2.0.0-rc.1
 
 git clone -q "$WORK/remote.git" "$WORK/checkout"
 
@@ -93,24 +94,43 @@ if deploy "v1.0.0; touch $WORK/pwned" >/dev/null 2>&1; then fail "injection unex
 pass "a crafted version argument is rejected"
 
 # -- a second deploy cannot interleave ------------------------------------
-flock -n "$WORK/checkout/.deploy.lock" -c 'sleep 5' &
+flock -n "$WORK/checkout/.deploy.lock" -c 'sleep 3' &
 holder=$!
 sleep 0.5
 if deploy v1.0.0 --force >/dev/null 2>&1; then fail "deploy ran while the lock was held"; fi
 kill "$holder" 2>/dev/null || true
 wait "$holder" 2>/dev/null || true
+# the holder's child keeps the inherited fd briefly; wait until the lock frees
+for _ in $(seq 1 40); do
+  flock -n "$WORK/checkout/.deploy.lock" -c true 2>/dev/null && break
+  sleep 0.25
+done
 pass "a concurrent deploy is refused"
 
-# -- failed stack build keeps the old state -------------------------------
+# -- a failed first deploy is retried, not treated as done ----------------
 rm -f "$WORK/checkout/.deployed-version"
-if DOCKER_FAIL=1 deploy v1.0.0 --force >/dev/null 2>&1; then fail "failed compose up unexpectedly succeeded"; fi
+if DOCKER_FAIL=1 deploy v1.0.0 >/dev/null 2>&1; then fail "failed compose up unexpectedly succeeded"; fi
 [ ! -e "$WORK/checkout/.deployed-version" ] || fail "state written after a failed stack build"
-pass "a failed stack build does not record a version"
+out="$(deploy v1.0.0)"
+grep -q "Deployed v1.0.0" <<<"$out" || fail "a failed first deploy was not retried"
+[ "$(cat "$WORK/checkout/.deployed-version")" = "v1.0.0" ] || fail "retry did not record the version"
+pass "a failed first deploy is retried, not treated as done"
 
-# -- list orders releases newest first ------------------------------------
-first="$(deploy --list | head -n1)"
+# -- rollback -------------------------------------------------------------
+deploy v1.1.0 >/dev/null
+out="$(deploy v1.0.0)"
+grep -q "Deployed v1.0.0" <<<"$out" || fail "rollback did not deploy the older version"
+[ "$(cat "$WORK/checkout/.deployed-version")" = "v1.0.0" ] || fail "rollback state not recorded"
+grep -q -- "--remove-orphans" "$DOCKER_LOG" || fail "compose up did not pass --remove-orphans"
+grep -q -- "--wait" "$DOCKER_LOG" || fail "compose up did not wait for readiness"
+pass "rolls back to an older tag, removing orphans and waiting for readiness"
+
+# -- list orders releases newest first, excluding prereleases -------------
+out="$(deploy --list)"
+first="$(head -n1 <<<"$out")"
 [ "$first" = "v1.1.0" ] || fail "--list is not newest-first (got '$first')"
-pass "--list orders releases newest first"
+if grep -q "v2.0.0-rc.1" <<<"$out"; then fail "--list included a prerelease tag"; fi
+pass "--list orders releases newest first and skips prereleases"
 
 # -- read-only flags reject extra arguments -------------------------------
 if deploy --status v1.0.0 >/dev/null 2>&1; then fail "--status accepted a version argument"; fi
