@@ -52,12 +52,7 @@ export function DailyChart({
       <ChartContainer config={config} className="mt-5 h-64 w-full">
         <LineChart data={rows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
           <CartesianGrid vertical={false} />
-          <ReferenceLine
-            x={period.to}
-            stroke="var(--muted-foreground)"
-            strokeDasharray="4 4"
-            label={{ value: "Today", position: "insideTop", fill: "var(--muted-foreground)", fontSize: 11, offset: 8 }}
-          />
+          <ReferenceLine x={period.to} stroke="var(--muted-foreground)" strokeDasharray="4 4" />
           <XAxis
             dataKey="date"
             tickFormatter={(value) => formatDay(String(value), { day: "numeric" })}
