@@ -1,0 +1,16 @@
+services:
+  metabase:
+    image: metabase/metabase:v0.63.16.6
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3005:3000"
+    environment:
+      JAVA_OPTS: "-Xmx768m"
+      TZ: ${MB_TZ:-Europe/Kyiv}
+      JAVA_TIMEZONE: ${MB_TZ:-Europe/Kyiv}
+    volumes:
+      - ../data:/data
+      - metabase-data:/metabase.db
+
+volumes:
+  metabase-data:
