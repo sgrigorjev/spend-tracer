@@ -6,7 +6,7 @@ The independent review is slower and more expensive than it needs to be, and wat
 
 - Cap the reviewer at 25 agentic steps so it must return findings instead of looping.
 - Deny the reviewer the `skill` and `lsp` permissions.
-- Deny the reviewer the browser and IDE-terminal MCP tools so it cannot leave the repository; it keeps only file reads, git and gh.
+- Deny the reviewer the browser and IDE-terminal MCP tools so it cannot leave the repository; it keeps file reads, git, gh, and context7 as the one allowed MCP server for documentation.
 - Point change discovery at `openspec/changes/archive/` as well as `openspec/changes/`.
 - Tell the reviewer to read a changed file in full only when a hunk is not enough, to work within a step and token budget, and to keep the report to findings with no preamble.
 - Document in `AGENTS.md` that the external `pr-watch` skill assumes a blocking loop this environment lacks: never block the session on checks, `gitleaks` and `semgrep` are the required gates, and CodeRabbit is checked only when the PR is otherwise merge-ready.

@@ -12,4 +12,4 @@
 
 ## 3. Review
 
-- [ ] 3.1 Run the `reviewer` subagent on this branch and record every finding with its disposition in `openspec/changes/tune-review-agent/review.md`.
+- [x] 3.1 Run the `reviewer` subagent on this branch and record every finding with its disposition in `openspec/changes/tune-review-agent/review.md`.

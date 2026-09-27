@@ -24,7 +24,7 @@ The reviewer is a read-only subagent (`.opencode/agents/reviewer.md`) spawned by
 
 ### Deny skill, lsp and the browser/IDE MCP tools
 
-`skill` and `lsp` are denied because neither is needed to judge a diff. `playwright_*` and `phpstorm_*` are denied because they let the reviewer leave the repository; the observed failure was reviewing a semgrep PR by browsing docs and running bash through the IDE terminal, which bypassed its bash allowlist. A prompt line states the reviewer has no MCP at all, which also covers servers not named in the deny list.
+`skill` and `lsp` are denied because neither is needed to judge a diff. `playwright_*` and `phpstorm_*` are denied because they let the reviewer leave the repository; the observed failure was reviewing a semgrep PR by browsing docs and running bash through the IDE terminal, which bypassed its bash allowlist. The denial is deliberately not extended to context7: it is the one allowed MCP server, for looking up library or tool documentation when the code depends on an external API. The prompt names context7 as that exception rather than claiming no MCP at all, so the instruction matches the permissions.
 
 ### Read the diff first, full files only when needed
 
