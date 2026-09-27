@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Moon, Settings, Sun, Wallet } from "lucide-react";
+import { ChevronDown, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { useAuth } from "./auth";
 import { useTheme } from "./theme";
 import { initials } from "./lib/format";
 import { Button } from "./components/ui/button";
+import { BrandMark } from "./components/BrandMark";
 
 /** The shared header and page frame for every authenticated route. */
 export function AppShell() {
@@ -42,9 +43,7 @@ export function AppShell() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Wallet className="h-4 w-4" />
-            </span>
+            <BrandMark />
             <span className="font-semibold tracking-tight">Spend Tracer</span>
           </Link>
 

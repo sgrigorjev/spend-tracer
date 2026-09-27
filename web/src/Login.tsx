@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { CircleAlert, Lock, Moon, Sun, Wallet } from "lucide-react";
+import { CircleAlert, Lock, Moon, Sun } from "lucide-react";
 import { AuthError, useAuth } from "./auth";
 import { useTheme } from "./theme";
+import { BrandMark } from "./components/BrandMark";
 import { Alert, AlertDescription } from "./components/ui/alert";
 import { Button } from "./components/ui/button";
 import {
@@ -109,9 +110,7 @@ export function Login() {
       <div className="w-full max-w-sm">
         <Card className="gap-0 rounded-2xl p-8">
           <CardHeader className="items-center gap-0 px-0 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Wallet className="h-6 w-6" />
-            </span>
+            <BrandMark size="lg" />
             <h1 className="mt-4 text-xl font-semibold tracking-tight">Spend Tracer</h1>
             <CardDescription className="mt-1 text-sm">
               Sign in to see your expenses
