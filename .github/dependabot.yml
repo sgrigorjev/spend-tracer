@@ -67,6 +67,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Node 25 is a current, non-LTS release. Stay on LTS in production and
+      # let the next LTS (26) be proposed instead.
+      - dependency-name: node
+        versions:
+          - "25.x"
     labels:
       - dependencies
 
@@ -76,6 +82,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Node 25 is a current, non-LTS release. Stay on LTS in production and
+      # let the next LTS (26) be proposed instead.
+      - dependency-name: node
+        versions:
+          - "25.x"
     labels:
       - dependencies
 
@@ -85,6 +97,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Node 25 is a current, non-LTS release. Stay on LTS in production and
+      # let the next LTS (26) be proposed instead.
+      - dependency-name: node
+        versions:
+          - "25.x"
     labels:
       - dependencies
 
