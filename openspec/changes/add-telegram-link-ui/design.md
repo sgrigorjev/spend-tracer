@@ -62,7 +62,7 @@ When `TELEGRAM_BOT_USERNAME` is unset the endpoint returns `url: null`. The pane
 
 ### Responsive two-column settings layout
 
-The settings page places the display card and the Telegram card in one grid (`grid gap-4 md:grid-cols-2`). From the `md` breakpoint (768px) up they sit side by side, each filling its column; below it they stack and each card takes the full content width. Both cards drop their former `max-w-xl` cap so the grid, not the card, decides width. This matches the breakpoint grids already used on the dashboard.
+The settings page places the display card and the Telegram card in one grid (`grid gap-4 md:grid-cols-2`). From the `md` breakpoint (768px) up they sit side by side, each filling its column; below it they stack and each card takes the full content width. Both cards drop their former `max-w-xl` cap so the grid, not the card, decides width. This follows the same responsive grid pattern used on the dashboard.
 
 ## Security analysis
 
