@@ -15,6 +15,10 @@ downloads/
 data/
 *.Zone.Identifier
 
+# Deployment state
+.deployed-version
+.deploy.lock
+
 # Tooling artifacts
 .playwright-mcp/
 

@@ -1,75 +1,71 @@
 # Deploy
 
-Pull-based deployment for the Docker stack on the OCI server. The server polls origin and redeploys when `main` moves; GitHub never connects in, so no deploy key lives in the repo.
+Deployment is a pull-based rollout of one release tag. The server checks out the tag, rebuilds the Docker stack and runs it. The server reaches GitHub; GitHub never connects in, so no deploy key lives in the repo. Nothing deploys on its own: a merge to `main` changes production only when a release is tagged and an operator deploys it.
 
-## How it works
+## Releases
 
-`deploy.sh` fetches origin, compares `HEAD` with the upstream branch, and exits if they match. On a new commit it pulls with `--ff-only`, rebuilds and restarts the stack, prunes dangling images, and prints the container status. A systemd timer runs it every 5 minutes.
+A release is an annotated semver tag `vX.Y.Z` published as a GitHub Release. Create and push the annotated tag first, then let `gh` publish the release for that exact tag:
 
-`.env` and `data/` are git-ignored, so a pull never touches them.
+```sh
+git tag -a v1.0.0 -m "v1.0.0"
+git push origin v1.0.0
+gh release create v1.0.0 --verify-tag --generate-notes
+```
+
+`--verify-tag` makes `gh` fail if the tag is missing, so the release never creates a lightweight tag of its own. Tags are immutable. Never move, delete or reuse a published tag; ship a fix as a new version.
+
+## Deploy a version
+
+From the server, from the repo root or by full path:
+
+```sh
+deploy/deploy.sh v1.0.0                 # deploy a release
+~/projects/spend-tracer/deploy/deploy.sh 1.0.0   # the leading v is optional
+deploy/deploy.sh --status               # deployed version and container state
+deploy/deploy.sh --list                 # recent release tags, newest first
+deploy/deploy.sh v1.0.0 --force         # rebuild the version already running
+```
+
+The script serializes deploys, switches the checkout to the tag detached, rebuilds and restarts the stack, prunes dangling images, then records the version. `.env` and `data/` are git-ignored and are never touched by the checkout.
+
+Rolling back is deploying an earlier tag: `deploy/deploy.sh v0.9.0`.
+
+Re-run is idempotent: deploying the version that is already running prints `already deployed` and does nothing unless `--force` is passed. The deployed version is recorded in `.deployed-version` (git-ignored) only after the stack comes up.
 
 ## Install
 
 One-time setup on the server. Get the code over SSH so the repo can stay private. Add the server's public key on GitHub first, as a deploy key or on an account.
 
 ```sh
-# fresh checkout
 git clone git@github.com:sgrigorjev/spend-tracer.git ~/projects/spend-tracer
-
-# or, on an existing HTTPS checkout, just switch the remote
-git -C ~/projects/spend-tracer remote set-url origin git@github.com:sgrigorjev/spend-tracer.git
-```
-
-Then, from the repo root:
-
-```sh
+cd ~/projects/spend-tracer
 cp .env.example .env
 nano .env
-docker compose up -d --build
 
 sudo usermod -aG docker ubuntu   # re-login if this changed anything
-chmod +x deploy/deploy.sh
-sudo systemctl link "$PWD/deploy/systemd/spend-tracer-deploy.service"
-sudo systemctl link "$PWD/deploy/systemd/spend-tracer-deploy.timer"
+mkdir -p data                    # gitignored, absent on a fresh clone
+sudo chown -R 1000:1000 data/    # let the non-root containers write to data/
+
+deploy/deploy.sh v1.0.0
+```
+
+The stack keeps `restart: unless-stopped`, so Docker restarts the containers after a reboot. No timer or unit is needed to keep it running.
+
+## Upgrading an install that used the timer
+
+An earlier install deployed `main` automatically every 5 minutes through a systemd timer. Remove it before the first tag deploy, otherwise the timer will pull `main` over the pinned tag:
+
+```sh
+sudo systemctl disable --now spend-tracer-deploy.timer
+sudo rm -f /etc/systemd/system/spend-tracer-deploy.service /etc/systemd/system/spend-tracer-deploy.timer
 sudo systemctl daemon-reload
-sudo systemctl enable --now spend-tracer-deploy.timer
-systemctl list-timers spend-tracer-deploy.timer
 ```
 
-The units are linked, not copied, so a `git pull` that changes them takes effect after `systemctl daemon-reload`. To install copies instead, replace the two `systemctl link` calls with `sudo cp deploy/systemd/spend-tracer-deploy.* /etc/systemd/system/`.
+Then deploy a release as above. If the environment file still lives at `bot/.env`, move it to the repo root first (`mv bot/.env .env`).
 
-The units assume the checkout is at `/home/ubuntu/projects/spend-tracer` and the deploy user is `ubuntu`. Edit both files if your paths differ.
-
-## Upgrading an existing install
-
-A server that already runs the bot from the previous `bot/.env` layout needs two one-time steps before the next deploy:
+## Verifying the deploy
 
 ```sh
-# move the environment file from bot/ back to the repo root
-mv bot/.env .env
-
-# let the non-root container write to the data directory
-sudo chown -R 1000:1000 data/
-```
-
-## Manual runs
-
-```sh
-# deploy the latest main now, without waiting for the timer
-sudo systemctl start spend-tracer-deploy.service
-
-# force a rebuild even when the checkout already matches origin
-~/projects/spend-tracer/deploy/deploy.sh --force
-
-journalctl -u spend-tracer-deploy.service -n 50
-```
-
-Use `start`, not `restart`: `restart` kills an in-flight deploy and starts it again.
-
-## Cron alternative
-
-If systemd is not an option:
-
-```cron
-*/5 * * * * flock -n /tmp/spend-tracer-deploy.lock /home/ubuntu/projects/spend-tracer/deploy/deploy.sh >> /var/log/spend-tracer-deploy.log 2>&1
+deploy/deploy.sh --status
+docker compose logs --tail=50 bot
 ```

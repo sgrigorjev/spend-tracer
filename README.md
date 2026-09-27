@@ -100,6 +100,10 @@ Environment variables, in `.env.example`:
 
 The design is documented in `openspec/`.
 
+## Deployment
+
+Releases are semver tags (`v1.0.0`) published as GitHub Releases. Deploying is a manual rollout of one tag on the server (`deploy/deploy.sh v1.0.0`); a merge to `main` does not deploy by itself. See [`deploy/README.md`](deploy/README.md).
+
 ## Project structure
 
 ```
