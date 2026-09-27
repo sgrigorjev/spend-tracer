@@ -7,6 +7,7 @@ steps: 25
 permission:
   edit: deny
   webfetch: deny
+  websearch: deny
   task: deny
   skill: deny
   lsp: deny

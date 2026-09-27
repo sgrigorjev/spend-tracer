@@ -7,7 +7,7 @@ The reviewer is a read-only subagent (`.opencode/agents/reviewer.md`) spawned by
 **Goals:**
 
 - Fewer steps and fewer tokens per review without weakening what it checks.
-- Keep the reviewer inside the repository: no browser, IDE, or MCP.
+- Keep the reviewer inside the repository: no browser, IDE-terminal or web-search access, with context7 the one allowed MCP server for documentation.
 - Document how to watch a PR without blocking the session.
 
 **Non-Goals:**

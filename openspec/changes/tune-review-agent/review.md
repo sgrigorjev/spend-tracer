@@ -16,3 +16,18 @@ No findings declined.
 ## Process note
 
 The reviewer read `.github/workflows/semgrep.yml`, a file outside the diff, because the review prompt asked it to confirm that the `gitleaks` and `semgrep` gates really are required. That was an instruction to verify an external fact, not the reviewer drifting. Keep future review prompts scoped to the diff and the change contract; do not ask the reviewer to confirm facts that live outside the branch.
+
+## Second round: live review after restart
+
+A second review ran on the branch after an opencode restart, with the new agent config active. It used context7 (the allowed documentation exception) and no browser or IDE-terminal MCP, and returned a full report within the step cap. That is the runtime verification for task 1.4.
+
+| # | Severity | Finding | Disposition |
+| - | -------- | ------- | ----------- |
+| 1 | minor | `design.md:10` goal said "no browser, IDE, or MCP", contradicting the decision that keeps context7. | Applied: the goal now reads "no browser, IDE-terminal or web-search access, with context7 the one allowed MCP server for documentation". |
+| 2 | minor | Task 1.3 (the live verification) was unchecked, so the config would ship unverified. | Applied: the live review ran and the task is marked done with the outcome recorded. |
+| 3 | nit | Task 1.2 described the pre-review wording ("no-MCP line", "findings-only report"). | Applied: rewritten to the final wording. |
+| 4 | nit | Tasks were numbered out of order. | Applied: renumbered so order matches execution. |
+| 5 | nit | `websearch` was not denied, so the reviewer could still reach the network and undercut the containment goal. | Applied: added `websearch: deny`, leaving context7 as the only external tool. |
+
+No findings declined.
+
