@@ -398,6 +398,10 @@ test("the summary converts to the display currency with one rate per request", a
     });
     assert.equal(second.statusCode, 200);
     assert.equal(calls, 1);
+    const secondBody = second.json() as typeof body;
+    assert.equal(secondBody.currency, "USD");
+    assert.equal(secondBody.total, 11);
+    assert.equal(secondBody.projectedTotal, 19.8);
   } finally {
     holder.fetch = original;
   }
