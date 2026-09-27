@@ -24,7 +24,7 @@
 ## 4. Server migration
 
 - [x] 4.1 Document the one-time server migration (disable and unlink the timer, `daemon-reload`, cut the first tag, deploy it once) in `deploy/README.md`. Verify the order matches the migration plan in `design.md`.
-- [ ] 4.2 On the server, run the migration and deploy the first release tag by hand. Verify the checkout is on the tag, `deploy/deploy.sh --status` reports it, and the containers are healthy.
+- [x] 4.2 On the server, run the migration and deploy the first release tag by hand. Verify the checkout is on the tag, `deploy/deploy.sh --status` reports it, and the containers are healthy.
 
 ## 5. Review
 
