@@ -16,6 +16,14 @@ No findings declined.
 
 The first push failed the `static analysis` check: semgrep's rule `package_managers.dependabot.dependabot-missing-cooldown` flagged one blocking finding per update entry, seven in total, because no entry set a `cooldown`. Applied: every entry now sets `cooldown.default-days: 7`, and the design records it as a supply-chain guard.
 
+## CodeRabbit round
+
+One finding, declined.
+
+| # | Severity | Finding | Disposition |
+| - | -------- | ------- | ----------- |
+| 1 | minor | The proposal said to group minor and patch updates per ecosystem, but the Docker entries have no `groups`. CodeRabbit asked to add a group to each Docker entry. | Declined: each Docker entry tracks a single base image, so a group has nothing to combine and would be inert. The proposal and design now say grouping applies to npm and GitHub Actions, which matches the config. |
+
 ## Note
 
 The reviewer confirmed the remaining checks pass: every directory holds the expected manifest or Dockerfile, the `groups` and `open-pull-requests-limit` keys are valid, skipping `docker-compose` is justified because it pins no `image:` tags, and the `dependabot` author is already excluded in `.github/release.yml`.

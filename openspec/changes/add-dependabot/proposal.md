@@ -8,7 +8,7 @@ Dependencies, container base images and GitHub Actions are bumped by hand, so th
   - npm in `bot/`, `api/` and `web/` (each has its own lockfile; `shared/` is dependency-free and is not listed);
   - Docker base images in `bot/`, `api/` and `web/`;
   - GitHub Actions used by the workflows.
-- Group minor and patch updates per ecosystem to keep the PR count down.
+- Group minor and patch updates for npm and GitHub Actions to keep the PR count down; each Docker entry tracks a single base image, so grouping it would combine nothing.
 - Dependabot PRs stay out of release notes: `.github/release.yml` already excludes the `dependabot` author.
 
 ## Capabilities

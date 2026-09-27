@@ -34,7 +34,7 @@ Each entry sets `cooldown.default-days: 7`, so a version published in the last w
 
 ### Weekly schedule with minor/patch groups
 
-Weekly is enough for a personal repo. Grouping minor and patch updates per ecosystem turns many small PRs into one, while majors still arrive individually so they get a closer look.
+Weekly is enough for a personal repo. Grouping minor and patch updates for npm and GitHub Actions turns many small PRs into one, while majors still arrive individually so they get a closer look. The Docker entries are deliberately not grouped: each tracks a single base image, so a group has nothing to combine.
 
 ## Risks / Trade-offs
 
