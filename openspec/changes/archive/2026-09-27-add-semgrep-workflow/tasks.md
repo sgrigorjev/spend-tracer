@@ -10,5 +10,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Confirm the workflow runs on a pull request and that a deliberate finding turns the check red.
-- [ ] 3.2 Confirm the check is clean on this PR once the Host header is removed.
+- [x] 3.1 Confirmed on PR #48: the check ran and went red on a finding (the pre-existing Host header), then green after the fix.
+- [x] 3.2 Confirmed: 0 findings with the pinned image locally, and a green `static analysis` check in CI.
