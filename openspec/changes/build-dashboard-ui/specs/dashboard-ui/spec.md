@@ -18,10 +18,10 @@ The dashboard SHALL offer the presets `day`, `week`, `two_weeks` and `month`, de
 - **WHEN** the user chooses another preset
 - **THEN** both requests use that preset and the summary and list update
 
-#### Scenario: Resolved range shown
+#### Scenario: Period shown
 
 - **WHEN** the summary returns its period
-- **THEN** the toolbar shows that range's start and end dates
+- **THEN** the toolbar shows the period's first and last calendar day, matching the chart axis
 
 ### Requirement: Summary cards
 
@@ -49,12 +49,17 @@ The dashboard SHALL show the total spent, the transaction count, the daily avera
 
 ### Requirement: Daily spend chart
 
-The dashboard SHALL chart the spend per day across the whole period, from its first to its last calendar day, drawing the actual days up to the current day and the projected remaining days as a distinct second series when the summary returns one. Days after the current day SHALL stay empty on the actual series.
+The dashboard SHALL chart the spend per day across the whole period, from its first to its last calendar day, drawing the actual days up to the current day and the projected remaining days as a distinct second series when the summary returns one. It SHALL mark the current day on the chart. Days after the current day SHALL stay empty on the actual series.
 
 #### Scenario: Axis covers the whole period
 
 - **WHEN** the period's calendar unit extends past the current day
 - **THEN** the axis runs to the period's last day, not only to the current day
+
+#### Scenario: Current day marked
+
+- **WHEN** the chart is drawn
+- **THEN** the current day carries a visible marker separating the actual days from the remaining ones
 
 #### Scenario: Every day present
 

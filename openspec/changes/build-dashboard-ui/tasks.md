@@ -34,3 +34,5 @@
 
 - [x] 9.1 Return the period's last calendar day from the API: add it to the resolved period in `shared/src/period.ts` and to the `period` in both expenses routes, and cover it in the period and route tests. Verify with `npm run typecheck` in `api/` and `bot/` and the targeted suites.
 - [x] 9.2 Draw the daily chart across the whole period, from its first to its last day, keeping the actual series to the current day and the projection over the remainder. Verify in the browser that a monthly chart runs to the last day of the month.
+- [x] 9.3 Show the period's first and last day in the toolbar (matching the chart axis) instead of the range through the current day, and update the period-selection spec scenario. Verify the label reads the full period.
+- [x] 9.4 Mark the current day on the chart with a vertical reference line labelled as today, so the actual and projected halves separate. Verify the marker sits on the current day and the remaining days stay empty.

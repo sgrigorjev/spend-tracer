@@ -41,7 +41,7 @@ The dashboard reads only the signed-in user's expenses, so every row's payer is 
 
 ### The chart spans the whole period, the server names its last day
 
-The daily chart's axis runs from the period's first to its last calendar day, not only to the current day, so the projected days sit in a visible remainder rather than off the end. The last day comes from the resolved `period` the API returns (`period.end`); the client does not compute it, keeping the calendar logic on the server. Days after the current day carry no actual value, so the actual line stops at today while the axis and grid continue to the period end. Alternative: the client deriving the last day from the preset and the anchor, rejected as the duplicated calendar logic the resolved period already exists to avoid.
+The daily chart's axis runs from the period's first to its last calendar day, not only to the current day, so the projected days sit in a visible remainder rather than off the end. The last day comes from the resolved `period` the API returns (`period.end`); the client does not compute it, keeping the calendar logic on the server. Days after the current day carry no actual value, so the actual line stops at today while the axis and grid continue to the period end. The current day itself, the anchor the actuals run through, is drawn as a vertical reference line so the actual and projected halves read apart at a glance. Alternative: the client deriving the last day from the preset and the anchor, rejected as the duplicated calendar logic the resolved period already exists to avoid.
 
 ### Formatting on the client
 

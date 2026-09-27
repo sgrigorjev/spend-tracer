@@ -18,7 +18,7 @@ export function Dashboard() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Expenses</h1>
           <p className="text-sm text-muted-foreground">
-            {summary ? `${formatDay(summary.period.from)} – ${formatDay(summary.period.to)}` : "…"}
+            {summary ? `${formatDay(summary.period.from)} – ${formatDay(summary.period.end)}` : "…"}
           </p>
         </div>
         <PeriodPresets value={preset} onChange={setPreset} />

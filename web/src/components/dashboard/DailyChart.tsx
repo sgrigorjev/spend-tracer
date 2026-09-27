@@ -1,4 +1,4 @@
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "../ui/chart";
 import { formatAxisCurrency, formatCurrency, formatDay } from "../../lib/format";
 import type { DailyPoint, Period } from "./useExpenseDashboard";
@@ -52,6 +52,12 @@ export function DailyChart({
       <ChartContainer config={config} className="mt-5 h-64 w-full">
         <LineChart data={rows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
           <CartesianGrid vertical={false} />
+          <ReferenceLine
+            x={period.to}
+            stroke="var(--muted-foreground)"
+            strokeDasharray="4 4"
+            label={{ value: "Today", position: "top", fill: "var(--muted-foreground)", fontSize: 11 }}
+          />
           <XAxis
             dataKey="date"
             tickFormatter={(value) => formatDay(String(value), { day: "numeric" })}
