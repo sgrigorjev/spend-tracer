@@ -43,3 +43,47 @@ test("redeemLinkToken binds a Telegram account once and refuses every other case
 
   store.close();
 });
+
+test("createLinkToken supersedes the user's earlier pending link", () => {
+  const store = createStore(":memory:");
+  const userId = makeUser(store, "a@example.com", "sub-a");
+
+  const first = store.createLinkToken(userId, 600);
+  const second = store.createLinkToken(userId, 600);
+
+  const superseded = store.redeemLinkToken(first.token, 111);
+  assert.equal(superseded.ok, false);
+  assert.equal(superseded.reason, "unknown");
+
+  const ok = store.redeemLinkToken(second.token, 222);
+  assert.ok(ok.ok);
+  assert.equal(ok.userId, userId);
+
+  store.close();
+});
+
+test("createLinkToken purges expired and already-used tokens", () => {
+  const store = createStore(":memory:");
+  const expiredUserId = makeUser(store, "a@example.com", "sub-a");
+  const usedUserId = makeUser(store, "b@example.com", "sub-b");
+  const freshUserId = makeUser(store, "c@example.com", "sub-c");
+
+  // An expired token is removed by the next mint for any user, and then reads
+  // as unknown rather than expired.
+  const expired = store.createLinkToken(expiredUserId, -1);
+  store.createLinkToken(freshUserId, 600);
+  const purgedExpired = store.redeemLinkToken(expired.token, 333);
+  assert.equal(purgedExpired.ok, false);
+  if (!purgedExpired.ok) assert.equal(purgedExpired.reason, "unknown");
+
+  // A used token is removed the same way, and then reads as unknown rather
+  // than already used.
+  const used = store.createLinkToken(usedUserId, 600);
+  assert.ok(store.redeemLinkToken(used.token, 111).ok);
+  store.createLinkToken(freshUserId, 600);
+  const purgedUsed = store.redeemLinkToken(used.token, 444);
+  assert.equal(purgedUsed.ok, false);
+  if (!purgedUsed.ok) assert.equal(purgedUsed.reason, "unknown");
+
+  store.close();
+});
