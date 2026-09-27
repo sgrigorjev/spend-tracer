@@ -187,6 +187,11 @@ test("the API docs are behind the session", async () => {
   const anonymous = await app.inject({ method: "GET", url: "/api/docs/json" });
   assert.equal(anonymous.statusCode, 401);
 
+  // The router decodes the path before matching, so an encoded docs path must
+  // be guarded too rather than slipping past a raw-URL check.
+  const encoded = await app.inject({ method: "GET", url: "/api/%64ocs/json" });
+  assert.equal(encoded.statusCode, 401);
+
   const signedIn = await app.inject({ method: "GET", url: "/api/docs/json", headers: { "x-test-user": String(userId) } });
   assert.equal(signedIn.statusCode, 200);
 

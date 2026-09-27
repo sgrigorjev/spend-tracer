@@ -47,12 +47,14 @@ export function requireUser(store: Store) {
 
 /**
  * Put the OpenAPI document and docs UI behind the session, so the API surface
- * is not enumerable by anyone who can reach the app without signing in.
+ * is not enumerable by anyone who can reach the app without signing in. The
+ * check uses the matched route, not the raw URL, since the router decodes the
+ * path before matching and an encoded path would otherwise slip past.
  */
 export function protectDocs(app: App, store: Store): void {
   const guard = requireUser(store);
   app.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
-    if (request.url.startsWith("/api/docs")) {
+    if (request.routeOptions.url?.startsWith("/api/docs")) {
       await guard(request, reply);
     }
   });
