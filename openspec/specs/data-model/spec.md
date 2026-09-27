@@ -50,7 +50,7 @@ The bot SHALL record expenses only from senders whose Telegram account is linked
 
 ### Requirement: Telegram account linking
 
-The system SHALL link a Telegram account to a signed-in user through a single-use token with a limited lifetime, and SHALL keep the Telegram account and the user mapping one-to-one.
+The system SHALL link a Telegram account to a signed-in user through a single-use token with a limited lifetime, SHALL keep the Telegram account and the user mapping one-to-one, and SHALL keep at most one live link token per user.
 
 #### Scenario: Successful link
 
@@ -71,6 +71,16 @@ The system SHALL link a Telegram account to a signed-in user through a single-us
 
 - **WHEN** the Telegram account is already linked to another user
 - **THEN** the system refuses the second link
+
+#### Scenario: New link supersedes an earlier pending link
+
+- **WHEN** a signed-in user requests a new link token while an earlier unused token for the same user is still valid
+- **THEN** the earlier token stops working and only the new one can be redeemed
+
+#### Scenario: Stale tokens are removed when a link is created
+
+- **WHEN** a new link token is created
+- **THEN** tokens that had expired or were already used are removed and no longer resolve on redemption
 
 ### Requirement: Date storage and grouping
 
