@@ -103,5 +103,7 @@ Record the outcome in `openspec/changes/<name>/review.md`: every finding with it
   in the description. Never commit to main directly. This is a personal repo, PRs are
   small and merged quickly.
 - A PR that archives a change (moves `openspec/changes/<name>/` to `openspec/changes/archive/`) always gets the `ignore-for-release` label, so archive churn stays out of the auto-generated release notes. See `.github/release.yml`.
+- Assign every PR to its creator (`sgrigorjev`) when opening it.
+- Label every PR with the release-notes category from `.github/release.yml` that fits (`feature`, `fix`, `chore`, `docs`, ...), so the auto-generated notes group it.
 - Comments, commit messages and PRs are written in English. Match the existing code style
   (doc comments, 120-column lines, sync sqlite calls).
