@@ -54,23 +54,19 @@ Both charts and the table read from arrays at the top of the `dashboard.html` sc
 
 ## Data the dashboard needs
 
-The API has to read the bot's `data/spend-tracer.db`, which is a separate SQLite file from `data/api.db`. Open it read-only and keep the queries in the API, not in the web app.
+Bot and API share one SQLite database and one schema; the API reads expenses through the shared store, not a copy and not the SQL from the web app. Grouping and filtering use the materialized `expense_date` (the owner's local day), not the UTC instant.
 
-Two endpoints would cover the mockup:
+Two endpoints in `api/src/routes/expenses.ts` cover the mockup. Both are scoped to the signed-in user and both take `preset` (`day | week | two_weeks | month`, default `month`) plus an optional `date` anchor defaulting to today in the user's timezone:
 
-- `GET /api/expenses/summary?from=&to=` returns `{ period, total, count, avgPerDay, daily[], byCategory[], topCategory }`.
-- `GET /api/expenses?from=&to=&limit=&offset=` returns the table rows plus the total count for pagination.
+- `GET /api/expenses/summary` returns `{ currency, period, comparison, total, count, pendingCount, pendingTotal, avgPerDay, totalDeltaPct, avgPerDayDeltaPct, daily[], byCategory[], topCategory, projected[], projectedTotal }`.
+- `GET /api/expenses?limit=&offset=` returns the table rows plus the total count for pagination.
 
-## Open questions
+Amounts come back in the user's display currency, converted once per request. `rejected` rows are omitted everywhere; `pending` rows count as transactions and are reported separately. For `month` and `week` the summary also projects the remaining days of the period from the previous period's per-weekday spend.
 
-- Which date groups an expense into a day: `paid_at` when set, otherwise `time`? The schema has both and `paid_at` is nullable.
-- The `expenses` table stores a `currency` per row. The mockup assumes one currency. Either filter to the dominant currency or convert.
-- Should the dashboard count only `confirmed` rows, or show `pending` and `rejected` behind a filter? The KPI "operations" and the table disagree if the answer differs.
-- Whether the API reads the bot database directly or the bot writes a copy the API owns. Direct read-only access is simpler, but it couples the two services to one schema.
+The comparison range is the previous calendar unit: the full previous month for `month`, the previous Monday to Sunday for `week`, the previous day for `day`, and the preceding 14 days for `two_weeks`.
 
 ## Next steps
 
 1. Add Tailwind v4 and shadcn to `web/`, run `npx shadcn init`, then add the components the mockup uses: `card`, `button`, `table`, `badge`, `tabs`, `dropdown-menu`, `chart`.
 2. Port `Login.tsx` and `Dashboard.tsx` to the tokens and components here.
-3. Add the summary and expenses endpoints to `api/`, reading `data/spend-tracer.db` read-only.
-4. Wire the period presets to the API query params.
+3. Wire the period presets to the summary and expenses endpoints and draw the projection as a second line.

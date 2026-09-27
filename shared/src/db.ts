@@ -123,6 +123,41 @@ export type FamilyResult =
   | { ok: true; familyId?: number }
   | { ok: false; reason: string };
 
+/** Confirmed spend and non-rejected count for one day. */
+export interface DailySpendRow {
+  date: string;
+  total_minor: number;
+  count: number;
+}
+
+/** Confirmed spend for one category. */
+export interface CategorySpendRow {
+  category: string;
+  total_minor: number;
+}
+
+/** Aggregates for a dashboard period. */
+export interface ExpenseSummary {
+  confirmed_total_minor: number;
+  confirmed_count: number;
+  pending_total_minor: number;
+  pending_count: number;
+  by_day: DailySpendRow[];
+  by_category: CategorySpendRow[];
+}
+
+/** One page of expenses plus the total number of matching rows. */
+export interface ExpensePage {
+  items: ExpenseRow[];
+  total: number;
+}
+
+/** Confirmed spend for one weekday, 0 = Sunday through 6 = Saturday. */
+export interface WeekdaySpendRow {
+  weekday: number;
+  total_minor: number;
+}
+
 /** Raised when a scope names a user outside the viewer's family. */
 export class ScopeForbiddenError extends Error {
   constructor() {
@@ -143,6 +178,9 @@ export interface Store {
   appendExpense(row: ExpenseInsert): number;
   setExpenseStatus(id: number, status: ExpenseStatus): void;
   updateExpense(id: number, fields: Partial<ExpenseUpdate>): void;
+  expenseSummary(userId: number, from: string, to: string): ExpenseSummary;
+  listExpenses(userId: number, from: string, to: string, limit: number, offset: number): ExpensePage;
+  spendByWeekday(userId: number, from: string, to: string): WeekdaySpendRow[];
   // messages
   appendMessage(message: MessageRecord): void;
   // telegram linking
@@ -327,6 +365,50 @@ export function createStore(dbPath: string): Store {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const updateStatus = db.prepare("UPDATE expenses SET status = ?, updated_at = ? WHERE id = ?");
+
+  const selectSummaryTotals = db.prepare(`
+    SELECT
+      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN base_amount_minor END), 0) AS confirmed_total_minor,
+      SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed_count,
+      COALESCE(SUM(CASE WHEN status = 'pending' THEN base_amount_minor END), 0) AS pending_total_minor,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count
+    FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status IN ('confirmed', 'pending')
+  `);
+  const selectDailySpend = db.prepare(`
+    SELECT expense_date AS date,
+      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN base_amount_minor END), 0) AS total_minor,
+      SUM(CASE WHEN status IN ('confirmed', 'pending') THEN 1 ELSE 0 END) AS count
+    FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status IN ('confirmed', 'pending')
+    GROUP BY expense_date
+    ORDER BY expense_date
+  `);
+  const selectCategorySpend = db.prepare(`
+    SELECT COALESCE(category, 'other') AS category,
+      COALESCE(SUM(base_amount_minor), 0) AS total_minor
+    FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status = 'confirmed'
+    GROUP BY COALESCE(category, 'other')
+    ORDER BY total_minor DESC
+  `);
+  const selectWeekdaySpend = db.prepare(`
+    SELECT CAST(strftime('%w', expense_date) AS INTEGER) AS weekday,
+      COALESCE(SUM(base_amount_minor), 0) AS total_minor
+    FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status = 'confirmed'
+    GROUP BY weekday
+  `);
+  const selectExpensePage = db.prepare(`
+    SELECT * FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status IN ('confirmed', 'pending')
+    ORDER BY expense_date DESC, id DESC
+    LIMIT ? OFFSET ?
+  `);
+  const selectExpensePageCount = db.prepare(`
+    SELECT COUNT(*) AS total FROM expenses
+    WHERE user_id = ? AND expense_date BETWEEN ? AND ? AND status IN ('confirmed', 'pending')
+  `);
   const insertMessage = db.prepare("INSERT INTO messages (user_id, text, created_at) VALUES (?, ?, ?)");
 
   const insertToken = db.prepare(
@@ -480,6 +562,39 @@ export function createStore(dbPath: string): Store {
       sets.push("updated_at = ?");
       values.push(nowIso());
       db.prepare(`UPDATE expenses SET ${sets.join(", ")} WHERE id = ?`).run(...values, id);
+    },
+    expenseSummary(userId, from, to) {
+      const totals = selectSummaryTotals.get(userId, from, to) as unknown as {
+        confirmed_total_minor: number;
+        confirmed_count: number;
+        pending_total_minor: number;
+        pending_count: number;
+      };
+      const byDay = (selectDailySpend.all(userId, from, to) as unknown as Array<Record<string, unknown>>).map((row) => ({
+        date: String(row.date),
+        total_minor: Number(row.total_minor),
+        count: Number(row.count),
+      }));
+      const byCategory = (
+        selectCategorySpend.all(userId, from, to) as unknown as Array<{ category: string; total_minor: number }>
+      ).map((row) => ({ category: row.category, total_minor: Number(row.total_minor) }));
+      return {
+        confirmed_total_minor: Number(totals.confirmed_total_minor),
+        confirmed_count: Number(totals.confirmed_count),
+        pending_total_minor: Number(totals.pending_total_minor),
+        pending_count: Number(totals.pending_count),
+        by_day: byDay,
+        by_category: byCategory,
+      };
+    },
+    listExpenses(userId, from, to, limit, offset) {
+      const items = selectExpensePage.all(userId, from, to, limit, offset) as unknown as ExpenseRow[];
+      const counted = selectExpensePageCount.get(userId, from, to) as unknown as { total: number };
+      return { items, total: Number(counted.total) };
+    },
+    spendByWeekday(userId, from, to) {
+      const rows = selectWeekdaySpend.all(userId, from, to) as unknown as Array<{ weekday: number; total_minor: number }>;
+      return rows.map((row) => ({ weekday: Number(row.weekday), total_minor: Number(row.total_minor) }));
     },
 
     appendMessage(message) {

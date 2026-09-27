@@ -14,6 +14,7 @@ const { registerDashboardRoutes } = await import("../src/routes/dashboard.ts");
 const { registerTelegramRoutes } = await import("../src/routes/telegram.ts");
 const { registerFamilyRoutes } = await import("../src/routes/family.ts");
 const { registerSettingsRoutes } = await import("../src/routes/settings.ts");
+const { registerExpensesRoutes } = await import("../src/routes/expenses.ts");
 
 test("the OpenAPI document lists every route with schemas", async () => {
   const app = await buildApp(pino({ level: "silent" }));
@@ -23,6 +24,7 @@ test("the OpenAPI document lists every route with schemas", async () => {
   registerTelegramRoutes(app, store);
   registerFamilyRoutes(app, store);
   registerSettingsRoutes(app, store);
+  registerExpensesRoutes(app, store);
   await app.ready();
 
   const res = await app.inject({ method: "GET", url: "/api/docs/json" });
@@ -46,6 +48,8 @@ test("the OpenAPI document lists every route with schemas", async () => {
     "/api/family/members/{userId}",
     "/api/family/scope",
     "/api/settings",
+    "/api/expenses/summary",
+    "/api/expenses",
   ].sort();
 
   assert.deepEqual(Object.keys(doc.paths).sort(), expected);
