@@ -1,37 +1,46 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "../ui/chart";
 import { formatAxisCurrency, formatCurrency, formatDay } from "../../lib/format";
-import type { DailyPoint } from "./useExpenseDashboard";
+import type { DailyPoint, Period } from "./useExpenseDashboard";
 
 const config = {
   actual: { label: "Spent", color: "var(--chart-1)" },
   projected: { label: "Projected", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
-/** Spend per day of the period, with the projected remaining days as a dashed line. */
+/** Shift a `YYYY-MM-DD` date by whole days, in UTC. */
+function addDays(date: string, days: number): string {
+  const shifted = new Date(`${date}T00:00:00.000Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+/** Spend per day across the whole period, with the projected remaining days dashed. */
 export function DailyChart({
   daily,
   projected,
   currency,
+  period,
 }: {
   daily: DailyPoint[];
   projected: Array<{ date: string; amount: number }>;
   currency: string;
+  period: Period;
 }) {
-  const rows: Array<{ date: string; actual: number | null; projected: number | null }> = daily.map((point) => ({
-    date: point.date,
-    actual: point.amount,
-    projected: null,
-  }));
+  const actualByDate = new Map(daily.map((point) => [point.date, point.amount]));
+  const projectedByDate = new Map(projected.map((point) => [point.date, point.amount]));
 
-  if (projected.length > 0) {
-    // Bridge the dashed line onto the last actual day so the two series join up.
-    if (rows.length > 0) {
-      rows[rows.length - 1]!.projected = rows[rows.length - 1]!.actual;
+  // Span the whole period: actuals through the current day, the projection after
+  // it, and empty days in between so the axis reaches the period's last day.
+  const rows: Array<{ date: string; actual: number | null; projected: number | null }> = [];
+  for (let date = period.from; date <= period.end; date = addDays(date, 1)) {
+    const actual = date <= period.to ? (actualByDate.get(date) ?? 0) : null;
+    let projection = projectedByDate.get(date) ?? null;
+    if (date === period.to && projected.length > 0 && actual !== null) {
+      // Bridge the dashed line onto the last actual day so the series join up.
+      projection = actual;
     }
-    for (const point of projected) {
-      rows.push({ date: point.date, actual: null, projected: point.amount });
-    }
+    rows.push({ date, actual, projected: projection });
   }
 
   return (

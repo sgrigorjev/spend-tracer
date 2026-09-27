@@ -2,7 +2,7 @@
 
 See `proposal.md` for motivation. What shapes the approach:
 
-- `expense-reporting` already serves `GET /api/expenses/summary` and `GET /api/expenses`, both scoped to the signed-in user and returning amounts in the display currency. The summary carries `period`, `comparison`, `total`, `count`, `pendingCount`, `pendingTotal`, `avgPerDay`, `totalDeltaPct`, `avgPerDayDeltaPct`, `daily[]`, `byCategory[]`, `topCategory`, `projected[]` and `projectedTotal`.
+- `expense-reporting` already serves `GET /api/expenses/summary` and `GET /api/expenses`, both scoped to the signed-in user and returning amounts in the display currency. The summary carries `period` (`{ preset, from, to, end }`), `comparison`, `total`, `count`, `pendingCount`, `pendingTotal`, `avgPerDay`, `totalDeltaPct`, `avgPerDayDeltaPct`, `daily[]`, `byCategory[]`, `topCategory`, `projected[]` and `projectedTotal`.
 - `add-app-shell-and-settings` gives the dashboard a shell, a route at `/`, and the auth context with the user's name.
 - `web/mockups/dashboard.html` fixes the layout: a period segmented control, four cards, a daily line chart, a category donut and a paged table. `web/mockups/README.md` already chose Recharts plus the shadcn `chart` wrapper.
 
@@ -39,6 +39,10 @@ The daily chart plots `daily` as the actual series and `projected` as a second, 
 
 The dashboard reads only the signed-in user's expenses, so every row's payer is that user; the column is filled from the auth context name, and no API change is needed. When family scope lands, the list endpoint must return a per-row payer and this column switches to it. Recorded as an open question.
 
+### The chart spans the whole period, the server names its last day
+
+The daily chart's axis runs from the period's first to its last calendar day, not only to the current day, so the projected days sit in a visible remainder rather than off the end. The last day comes from the resolved `period` the API returns (`period.end`); the client does not compute it, keeping the calendar logic on the server. Days after the current day carry no actual value, so the actual line stops at today while the axis and grid continue to the period end. Alternative: the client deriving the last day from the preset and the anchor, rejected as the duplicated calendar logic the resolved period already exists to avoid.
+
 ### Formatting on the client
 
 Amounts are formatted with `Intl.NumberFormat(undefined, { style: "currency", currency })` using the response currency, so the exponent follows the currency. Dates are `YYYY-MM-DD` and are formatted as UTC calendar days, so a date-only value cannot shift to the previous day in a negative-offset timezone. The mockup's page size of ten drives `limit`/`offset`; `total` comes from the list response.
@@ -62,6 +66,7 @@ Amounts are formatted with `Intl.NumberFormat(undefined, { style: "currency", cu
 - **A date shifting by a day in the browser's timezone.** → Format date-only values in UTC.
 - **A stale response overwriting a newer one.** → Abort the in-flight requests on preset or page change.
 - **Currencies without two decimals.** → `Intl.NumberFormat` applies the currency's own exponent.
+- **A full-period axis without a projection leaves an empty right side.** → Intended: that space is where the projection lands once the comparison period has data, and the header still names the actual data range.
 
 ## Open Questions
 

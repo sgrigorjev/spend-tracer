@@ -29,3 +29,8 @@
 ## 8. Verification
 
 - [x] 8.1 Run `npm run typecheck` in `web/` and a browser pass: the default month, each preset, a period with data and an empty one, page next and previous, and the currency formatting for a non-EUR display currency.
+
+## 9. Full-period axis
+
+- [x] 9.1 Return the period's last calendar day from the API: add it to the resolved period in `shared/src/period.ts` and to the `period` in both expenses routes, and cover it in the period and route tests. Verify with `npm run typecheck` in `api/` and `bot/` and the targeted suites.
+- [x] 9.2 Draw the daily chart across the whole period, from its first to its last day, keeping the actual series to the current day and the projection over the remainder. Verify in the browser that a monthly chart runs to the last day of the month.

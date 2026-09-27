@@ -58,7 +58,7 @@ Bot and API share one SQLite database and one schema; the API reads expenses thr
 
 Two endpoints in `api/src/routes/expenses.ts` cover the mockup. Both are scoped to the signed-in user and both take `preset` (`day | week | two_weeks | month`, default `month`) plus an optional `date` anchor defaulting to today in the user's timezone:
 
-- `GET /api/expenses/summary` returns `{ currency, period, comparison, total, count, pendingCount, pendingTotal, avgPerDay, totalDeltaPct, avgPerDayDeltaPct, daily[], byCategory[], topCategory, projected[], projectedTotal }`.
+- `GET /api/expenses/summary` returns `{ currency, period, comparison, total, count, pendingCount, pendingTotal, avgPerDay, totalDeltaPct, avgPerDayDeltaPct, daily[], byCategory[], topCategory, projected[], projectedTotal }`, where `period` is `{ preset, from, to, end }`: `to` is the current day and `end` is the period's last day, so the daily chart can span the whole period.
 - `GET /api/expenses?limit=&offset=` returns the table rows plus the total count for pagination.
 
 Amounts come back in the user's display currency, converted once per request. `rejected` rows are omitted everywhere; `pending` rows count as transactions and are reported separately. For `month` and `week` the summary also projects the remaining days of the period from the previous period's per-weekday spend.

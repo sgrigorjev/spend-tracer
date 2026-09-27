@@ -49,22 +49,27 @@ The dashboard SHALL show the total spent, the transaction count, the daily avera
 
 ### Requirement: Daily spend chart
 
-The dashboard SHALL chart the spend per day of the period from the summary's daily series, and SHALL draw the projected remaining days as a distinct second series when the summary returns one.
+The dashboard SHALL chart the spend per day across the whole period, from its first to its last calendar day, drawing the actual days up to the current day and the projected remaining days as a distinct second series when the summary returns one. Days after the current day SHALL stay empty on the actual series.
+
+#### Scenario: Axis covers the whole period
+
+- **WHEN** the period's calendar unit extends past the current day
+- **THEN** the axis runs to the period's last day, not only to the current day
 
 #### Scenario: Every day present
 
-- **WHEN** the period has days without spend
-- **THEN** those days appear on the axis with a zero amount
+- **WHEN** a day in the elapsed part of the period has no spend
+- **THEN** it appears on the axis with a zero amount
 
 #### Scenario: Projection drawn
 
 - **WHEN** the summary returns projected days
-- **THEN** they are drawn as a distinct series continuing after the last actual day
+- **THEN** they are drawn as a distinct series over the remaining days of the period
 
 #### Scenario: No projection
 
 - **WHEN** the preset has no remainder or the comparison period is empty
-- **THEN** only the actual series is drawn
+- **THEN** the actual series ends on the current day and the remaining days stay empty
 
 ### Requirement: Category breakdown
 

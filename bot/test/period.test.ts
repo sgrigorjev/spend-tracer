@@ -5,6 +5,7 @@ import {
   countDays,
   eachDay,
   isValidDate,
+  periodEnd,
   remainingDays,
   resolvePeriod,
   todayInTimeZone,
@@ -15,12 +16,14 @@ test("resolves the current and comparison ranges for every preset", () => {
     preset: "month",
     anchor: "2026-09-27",
     period: { from: "2026-09-01", to: "2026-09-27" },
+    end: "2026-09-30",
     comparison: { from: "2026-08-01", to: "2026-08-31" },
   });
   assert.deepEqual(resolvePeriod("day", "2026-09-27"), {
     preset: "day",
     anchor: "2026-09-27",
     period: { from: "2026-09-27", to: "2026-09-27" },
+    end: "2026-09-27",
     comparison: { from: "2026-09-26", to: "2026-09-26" },
   });
   // 2026-09-27 is a Sunday, so the week runs Monday the 21st through the anchor.
@@ -28,14 +31,24 @@ test("resolves the current and comparison ranges for every preset", () => {
     preset: "week",
     anchor: "2026-09-27",
     period: { from: "2026-09-21", to: "2026-09-27" },
+    end: "2026-09-27",
     comparison: { from: "2026-09-14", to: "2026-09-20" },
   });
   assert.deepEqual(resolvePeriod("two_weeks", "2026-09-27"), {
     preset: "two_weeks",
     anchor: "2026-09-27",
     period: { from: "2026-09-14", to: "2026-09-27" },
+    end: "2026-09-27",
     comparison: { from: "2026-08-31", to: "2026-09-13" },
   });
+});
+
+test("periodEnd is the calendar unit's last day", () => {
+  assert.equal(periodEnd("month", "2026-09-27"), "2026-09-30");
+  assert.equal(periodEnd("month", "2026-02-15"), "2026-02-28");
+  assert.equal(periodEnd("week", "2026-09-23"), "2026-09-27");
+  assert.equal(periodEnd("day", "2026-09-27"), "2026-09-27");
+  assert.equal(periodEnd("two_weeks", "2026-09-27"), "2026-09-27");
 });
 
 test("the month comparison ends on the previous month's last day", () => {

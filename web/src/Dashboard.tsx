@@ -34,7 +34,12 @@ export function Dashboard() {
         <>
           <SummaryCards summary={summary} />
           <div className="grid gap-4 lg:grid-cols-3">
-            <DailyChart daily={summary.daily} projected={summary.projected} currency={summary.currency} />
+            <DailyChart
+              daily={summary.daily}
+              projected={summary.projected}
+              currency={summary.currency}
+              period={summary.period}
+            />
             <CategoryDonut summary={summary} />
           </div>
           <ExpensesTable list={list} page={page} pageSize={PAGE_SIZE} payer={payer} onPage={setPage} />

@@ -11,6 +11,8 @@ export interface Period {
   preset: PeriodPreset;
   from: string;
   to: string;
+  /** Last day of the period's calendar unit; the chart axis spans `from` to `end`. */
+  end: string;
 }
 
 export interface DailyPoint {
