@@ -350,3 +350,108 @@ test("the projection follows the preset and stays empty without a remainder", as
   await app.close();
   store.close();
 });
+
+test("the summary converts to the display currency with one rate per request", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = signIn(store, "a@example.com", "sub-a");
+  store.updateUserSettings(userId, { display_currency: "USD" });
+  store.appendExpense(expense(userId, { expense_date: "2026-09-05", base_amount_minor: 1000 }));
+  // 2026-08-10 is a Monday, and August 2026 has five Mondays.
+  store.appendExpense(expense(userId, { expense_date: "2026-08-10", base_amount_minor: 4000 }));
+
+  const holder = globalThis as unknown as { fetch: unknown };
+  const original = holder.fetch;
+  let calls = 0;
+  holder.fetch = () => {
+    calls += 1;
+    return Promise.resolve({ ok: true, json: async () => ({ date: "2026-09-27", rates: { USD: 1.1 } }) });
+  };
+
+  try {
+    const headers = { "x-test-user": String(userId) };
+    const first = await app.inject({
+      method: "GET",
+      url: "/api/expenses/summary?preset=month&date=2026-09-27",
+      headers,
+    });
+    assert.equal(first.statusCode, 200);
+    const body = first.json() as {
+      currency: string;
+      total: number;
+      projected: Array<{ date: string; amount: number }>;
+      projectedTotal: number | null;
+    };
+    assert.equal(body.currency, "USD");
+    assert.equal(body.total, 11);
+    assert.deepEqual(body.projected, [
+      { date: "2026-09-28", amount: 8.8 },
+      { date: "2026-09-29", amount: 0 },
+      { date: "2026-09-30", amount: 0 },
+    ]);
+    assert.equal(body.projectedTotal, 19.8);
+
+    // The rate is cached, so the second request reuses it without another lookup.
+    const second = await app.inject({
+      method: "GET",
+      url: "/api/expenses/summary?preset=month&date=2026-09-27",
+      headers,
+    });
+    assert.equal(second.statusCode, 200);
+    assert.equal(calls, 1);
+    const secondBody = second.json() as typeof body;
+    assert.equal(secondBody.currency, "USD");
+    assert.equal(secondBody.total, 11);
+    assert.equal(secondBody.projectedTotal, 19.8);
+  } finally {
+    holder.fetch = original;
+  }
+
+  await app.close();
+  store.close();
+});
+
+test("the summary falls back to the base currency when no rate resolves", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = signIn(store, "a@example.com", "sub-a");
+  store.updateUserSettings(userId, { display_currency: "USD" });
+  store.appendExpense(expense(userId, { expense_date: "2026-09-05", base_amount_minor: 1000 }));
+
+  const holder = globalThis as unknown as { fetch: unknown };
+  const original = holder.fetch;
+  holder.fetch = () => Promise.reject(new Error("offline"));
+
+  try {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/expenses/summary?preset=month&date=2026-09-27",
+      headers: { "x-test-user": String(userId) },
+    });
+    assert.equal(res.statusCode, 200);
+    const body = res.json() as { currency: string; total: number };
+    assert.equal(body.currency, "EUR");
+    assert.equal(body.total, 10);
+  } finally {
+    holder.fetch = original;
+  }
+
+  await app.close();
+  store.close();
+});
+
+test("the expenses endpoints reject an unknown preset, a bad date and a large limit", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = signIn(store, "a@example.com", "sub-a");
+  const headers = { "x-test-user": String(userId) };
+
+  const badPreset = await app.inject({ method: "GET", url: "/api/expenses/summary?preset=quarter&date=2026-09-27", headers });
+  assert.equal(badPreset.statusCode, 400);
+
+  const badDate = await app.inject({ method: "GET", url: "/api/expenses?preset=month&date=2026-02-31", headers });
+  assert.equal(badDate.statusCode, 400);
+
+  const badLimit = await app.inject({ method: "GET", url: "/api/expenses?preset=month&date=2026-09-27&limit=1000", headers });
+  assert.equal(badLimit.statusCode, 400);
+
+  await app.close();
+  store.close();
+});
