@@ -184,6 +184,8 @@ export interface Store {
   // messages
   appendMessage(message: MessageRecord): void;
   // telegram linking
+  // ttlSeconds is the token lifetime and is expected to be positive; a
+  // non-positive value mints an immediately expired token (used by tests).
   createLinkToken(userId: number, ttlSeconds: number): { token: string; expiresAt: string };
   redeemLinkToken(token: string, telegramUserId: number): RedeemResult;
   // families
@@ -416,6 +418,8 @@ export function createStore(dbPath: string): Store {
   );
   const selectToken = db.prepare("SELECT * FROM link_tokens WHERE token = ?");
   const markTokenUsedIfUnused = db.prepare("UPDATE link_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL");
+  const deleteStaleTokens = db.prepare("DELETE FROM link_tokens WHERE expires_at <= ? OR used_at IS NOT NULL");
+  const deleteUserTokens = db.prepare("DELETE FROM link_tokens WHERE user_id = ?");
 
   const insertFamily = db.prepare("INSERT INTO families (name, owner_id, created_at) VALUES (?, ?, ?)");
   const selectFamilyById = db.prepare("SELECT * FROM families WHERE id = ?");
@@ -605,7 +609,18 @@ export function createStore(dbPath: string): Store {
       const token = randomBytes(16).toString("base64url");
       const createdAt = nowIso();
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-      insertToken.run(token, userId, createdAt, expiresAt);
+      // Purge stale rows and drop this user's earlier pending link, so the table
+      // holds at most one live token per user and a new link invalidates the old.
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        deleteStaleTokens.run(createdAt);
+        deleteUserTokens.run(userId);
+        insertToken.run(token, userId, createdAt, expiresAt);
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
       return { token, expiresAt };
     },
     redeemLinkToken(token, telegramUserId) {

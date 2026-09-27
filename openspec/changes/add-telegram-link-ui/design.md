@@ -17,11 +17,12 @@ Goals:
 - Let a signed-in user link a Telegram account from settings without leaving the page or touching the database.
 - Cover both orientations: the site open on a desktop while Telegram is on a phone (QR), and the site open on the phone itself (tappable deep link).
 - Reflect a completed link in the already-open page.
+- Keep link-token storage bounded, so minting links cannot grow the table without limit.
 
 Non-Goals:
 
 - Unlinking or re-linking an account. The one-to-one mapping stays unbreakable from the UI in this change.
-- Any change to the API, bot or schema. The endpoints and store methods are consumed as they are.
+- Any change to the API routes, the bot process or the schema. The single backend change is the token lifecycle in the shared store.
 - Linking from the bot side (for example a `/start` code typed into the site).
 
 ## Decisions
@@ -60,6 +61,10 @@ The client computes the remaining time from the server's `expiresAt` and shows i
 
 When `TELEGRAM_BOT_USERNAME` is unset the endpoint returns `url: null`. The panel then explains that linking is not configured rather than showing a broken link or an empty QR. This surfaces a deployment mistake instead of hiding it.
 
+### Purge stale tokens when issuing a link
+
+`createLinkToken` deletes expired and already-used rows and the user's earlier unused token before inserting the new one, all in one transaction. This bounds `link_tokens` to roughly one live row per user, and it invalidates the previous QR the moment the user creates a new link. Alternative considered: a background purge job. Rejected because the write already happens at issue time, so no scheduler or extra process is needed. The endpoint stays unthrottled: a signed-in user can still call it in a loop, but each call now leaves one row instead of accumulating, so the table cannot grow without bound.
+
 ### Responsive two-column settings layout
 
 The settings page places the display card and the Telegram card in one grid (`grid gap-4 md:grid-cols-2`). From the `md` breakpoint (768px) up they sit side by side, each filling its column; below it they stack and each card takes the full content width. Both cards drop their former `max-w-xl` cap so the grid, not the card, decides width. This follows the same responsive grid pattern used on the dashboard.
@@ -73,7 +78,7 @@ The link token is a bearer credential for binding a Telegram account, so it gets
 - The one-to-one mapping means a token leaked to a third party binds that party's Telegram only if no other account is linked; if the user's own account is already linked the redeem fails with `telegram_taken`.
 - QR and deep link expose the token to the phone's Telegram client and, transitively, to Telegram's servers as a start payload. That is inherent to Telegram deep links. The short TTL and single use bound the damage; the token grants only the one-time bind.
 - The token stays in memory only, is not logged on either side, and the status endpoint exposes nothing beyond the user's own link state.
-- Minting tokens grows the `link_tokens` table with rows that are never read after expiry. This change does not add cleanup. Impact is negligible at this scale; a purge is a possible follow-up.
+- Minting a token removes the user's earlier unused token and any expired or used rows before inserting the new one, so `link_tokens` stays near one live row per user and the endpoint cannot be used to grow the table without bound.
 
 ## Risks / Trade-offs
 

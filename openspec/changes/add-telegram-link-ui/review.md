@@ -26,3 +26,19 @@ The reviewer also confirmed token handling is correct: the `token` field is disc
 - `npm run typecheck` passes in `web/` and `bot/`.
 - Browser render on the running stack with mocked endpoints: linked, unlinked, pending (QR 176x176, `role="img"` label), expired (no QR, "create a new link"), not configured (`url: null`), and status-error with retry.
 - Polling flips the open page from pending to linked after one 3-second tick.
+
+## Second round: token lifecycle backend
+
+Independent review of the token-cleanup change (`createLinkToken` purging stale rows and superseding the user's earlier pending token, plus the new tests and the `data-model` delta).
+
+1. **Minor, `createLinkToken` did not bound its TTL** (`shared/src/db.ts`). Any `ttlSeconds`, including zero or negative, minted an already-expired token that stayed until a later mint purged it.
+   Applied in part: added a doc comment on the store interface stating that a positive lifetime is expected and that a non-positive value mints an already-expired token used by tests. Declined the throw or clamp: the only caller passes the `600` constant, and the negative TTL is how the existing expiry test builds an expired row.
+
+2. **Nit, `redeemLinkToken` reads the token before its transaction** (`shared/src/db.ts`). A mint that supersedes the token between the read and `BEGIN IMMEDIATE` makes the redeem report `used` instead of `unknown`.
+   Declined: the run-outside-transaction read predates this change and is functionally safe, since nothing is bound; only the failure reason string differs, and both are reported to the user as a failed link.
+
+3. **Nit, the purge test did not isolate the expired case** (`api/test/link.test.ts`). The expired row was already purged by the intermediate mint, so the comment overstated which call did the purging.
+   Applied: split into two cases, an expired token and a used token, each purged by its own fresh mint and then asserted to read as `unknown`.
+
+Verification after the fixes: `node --test test/link.test.ts` in `api/` passes (3 tests), and `npm run typecheck` passes in `api/`, `bot/` and `web/`.
+

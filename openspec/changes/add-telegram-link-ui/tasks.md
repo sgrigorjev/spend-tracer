@@ -24,3 +24,8 @@
 - [x] 5.1 Review the diff for token exposure (no `localStorage`, no `sessionStorage`, no `console` output, no token in the URL bar) and confirm the panel only ever shows the deep link and QR; record the outcome in `review.md`.
 - [x] 5.2 Run `npm run typecheck` in `web/` and in `bot/`; verify both pass before opening the PR.
 - [ ] 5.3 Verify end to end on the stage environment: open settings, scan the QR with the phone, tap Start, confirm the open page flips to the linked state and the bot then records an expense from that account.
+
+## 6. Token lifecycle
+
+- [x] 6.1 In `createLinkToken`, purge expired and already-used tokens and the user's earlier pending token before inserting the new one, inside one transaction; verify `node --test test/link.test.ts` in `api/` covers both the supersede and the purge cases.
+- [x] 6.2 Run `npm run typecheck` in `api/`, `bot/` and `web/`; verify all pass.
