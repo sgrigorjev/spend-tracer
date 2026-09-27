@@ -1,5 +1,5 @@
 ---
-description: Independent read-only review of the current branch against a base ref
+description: Independent read-only review of the current branch against a base ref (spawns the reviewer subagent; do not run via opencode run)
 agent: reviewer
 subtask: true
 ---

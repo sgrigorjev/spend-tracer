@@ -83,7 +83,9 @@ The MCP profile holds your Google cookies. Keep it local, never commit it, never
 
 ## Code review
 
-Before opening a PR, run `/review` on the branch diff. It runs the `reviewer` subagent, a read-only pass on a different model, against `AGENTS.md` and the branch's OpenSpec change. Address every finding, or decline it with one concrete reason; the reviewer never edits, it only reports.
+Before opening a PR, run the review by spawning the `reviewer` subagent: the Task tool with `subagent_type: reviewer`, or `@reviewer` in the TUI. Do not run `opencode run --command review` from the shell; that starts a fresh top-level session where the command executes in the primary agent, so the subagent never runs and the pass is not independent. The reviewer never edits, it only reports findings as severity, `file:line`, reason and fix.
+
+Record the outcome in `openspec/changes/<name>/review.md`: every finding with its disposition, applied in a commit or declined with one concrete reason. The file travels with the change into the archive, so the review leaves a durable trace rather than living only in chat.
 
 ## Conventions
 
