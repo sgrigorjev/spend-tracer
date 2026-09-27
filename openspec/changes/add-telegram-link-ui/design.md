@@ -60,6 +60,10 @@ The client computes the remaining time from the server's `expiresAt` and shows i
 
 When `TELEGRAM_BOT_USERNAME` is unset the endpoint returns `url: null`. The panel then explains that linking is not configured rather than showing a broken link or an empty QR. This surfaces a deployment mistake instead of hiding it.
 
+### Responsive two-column settings layout
+
+The settings page places the display card and the Telegram card in one grid (`grid gap-4 md:grid-cols-2`). From the `md` breakpoint (768px) up they sit side by side, each filling its column; below it they stack and each card takes the full content width. Both cards drop their former `max-w-xl` cap so the grid, not the card, decides width. This matches the breakpoint grids already used on the dashboard.
+
 ## Security analysis
 
 The link token is a bearer credential for binding a Telegram account, so it gets the same care as a password reset code.

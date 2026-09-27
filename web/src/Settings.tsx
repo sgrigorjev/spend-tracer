@@ -92,66 +92,68 @@ export function Settings() {
   return (
     <section className="space-y-4">
       <h1 className="text-xl font-semibold tracking-tight">Account settings</h1>
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle>Display preferences</CardTitle>
-          <CardDescription>Choose how amounts and dates are shown to you.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={save} className="space-y-5">
-            {status && (
-              <Alert variant={status.kind === "error" ? "destructive" : "default"}>
-                {status.kind === "error" ? (
-                  <CircleAlert className="h-4 w-4 shrink-0" />
-                ) : (
-                  <Check className="h-4 w-4 shrink-0" />
-                )}
-                <AlertDescription>{status.message}</AlertDescription>
-              </Alert>
-            )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Display preferences</CardTitle>
+            <CardDescription>Choose how amounts and dates are shown to you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={save} className="space-y-5">
+              {status && (
+                <Alert variant={status.kind === "error" ? "destructive" : "default"}>
+                  {status.kind === "error" ? (
+                    <CircleAlert className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <Check className="h-4 w-4 shrink-0" />
+                  )}
+                  <AlertDescription>{status.message}</AlertDescription>
+                </Alert>
+              )}
 
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium">Display currency</span>
-              <select
-                className={SELECT_CLASS}
-                value={currency}
-                disabled={busy}
-                onChange={(event) => setCurrency(event.target.value)}
-              >
-                {currency === "" && <option value="" />}
-                {CURRENCIES.map((code) => (
-                  <option key={code} value={code}>
-                    {code}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium">Display currency</span>
+                <select
+                  className={SELECT_CLASS}
+                  value={currency}
+                  disabled={busy}
+                  onChange={(event) => setCurrency(event.target.value)}
+                >
+                  {currency === "" && <option value="" />}
+                  {CURRENCIES.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium">Timezone</span>
-              <select
-                className={SELECT_CLASS}
-                value={timezone}
-                disabled={busy}
-                onChange={(event) => setTimezone(event.target.value)}
-              >
-                {timezone === "" && <option value="" />}
-                {zones.map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium">Timezone</span>
+                <select
+                  className={SELECT_CLASS}
+                  value={timezone}
+                  disabled={busy}
+                  onChange={(event) => setTimezone(event.target.value)}
+                >
+                  {timezone === "" && <option value="" />}
+                  {zones.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <Button type="submit" disabled={busy}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={busy}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      <TelegramSettings />
+        <TelegramSettings />
+      </div>
     </section>
   );
 }

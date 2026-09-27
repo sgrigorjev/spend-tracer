@@ -134,7 +134,7 @@ export function TelegramSettings() {
   const remaining = pending ? Math.max(0, Math.ceil((pending.expiresAt - now) / 1000)) : 0;
 
   return (
-    <Card className="max-w-xl">
+    <Card>
       <CardHeader>
         <CardTitle>Telegram</CardTitle>
         <CardDescription>Link your Telegram account so the bot records your expenses.</CardDescription>
