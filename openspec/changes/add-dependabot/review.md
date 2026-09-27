@@ -12,6 +12,10 @@ Independent review of the branch diff (`reviewer` subagent) against `origin/main
 
 No findings declined.
 
+## CI round: semgrep
+
+The first push failed the `static analysis` check: semgrep's rule `package_managers.dependabot.dependabot-missing-cooldown` flagged one blocking finding per update entry, seven in total, because no entry set a `cooldown`. Applied: every entry now sets `cooldown.default-days: 7`, and the design records it as a supply-chain guard.
+
 ## Note
 
 The reviewer confirmed the remaining checks pass: every directory holds the expected manifest or Dockerfile, the `groups` and `open-pull-requests-limit` keys are valid, skipping `docker-compose` is justified because it pins no `image:` tags, and the `dependabot` author is already excluded in `.github/release.yml`.

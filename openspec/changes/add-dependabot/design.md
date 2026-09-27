@@ -24,6 +24,10 @@ Dependabot scans a single manifest per `directory`. `bot/`, `api/` and `web/` ea
 
 Dependabot reads `FROM` lines and only updates tags it can interpret as a version. Entries cover `bot/`, `api/` and `web/`. In `web/`, the `node:24-alpine` build stage is trackable, but `nginx:alpine` is a floating tag and is left untouched until it is pinned to a version. That omission is deliberate, not an oversight.
 
+### A 7-day cooldown on every entry
+
+Each entry sets `cooldown.default-days: 7`, so a version published in the last week is not proposed. That is a supply-chain guard against a freshly published malicious or broken release, and the repo's semgrep rule `dependabot-missing-cooldown` blocks a config without it.
+
 ### Skip docker-compose
 
 `docker-compose.yml` uses `build:` only and pins no `image:` tags, so the `docker-compose` ecosystem would find nothing. Adding it would be noise.
