@@ -25,8 +25,11 @@ export function CategoryDonut({ summary }: { summary: Summary }) {
     fill: categoryColor(entry.category, index),
   }));
 
+  // Key the chart config by index, never by the raw category string: the config
+  // key becomes a CSS custom property name in ChartStyle, so an unexpected
+  // category from the API could otherwise inject CSS.
   const config: ChartConfig = Object.fromEntries(
-    data.map((entry) => [entry.category, { label: entry.label, color: entry.fill }]),
+    data.map((entry, index) => [`cat-${index}`, { label: entry.label, color: entry.fill }]),
   );
 
   return (
@@ -44,7 +47,12 @@ export function CategoryDonut({ summary }: { summary: Summary }) {
                   <ChartTooltipContent
                     nameKey="label"
                     hideLabel
-                    formatter={(value) => formatCurrency(Number(value), currency)}
+                    formatter={(value, name) => (
+                      <div className="flex w-full justify-between gap-3">
+                        <span className="text-muted-foreground">{String(name)}</span>
+                        <span className="font-mono tabular-nums">{formatCurrency(Number(value), currency)}</span>
+                      </div>
+                    )}
                   />
                 }
               />

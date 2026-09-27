@@ -29,7 +29,7 @@ A `useExpenseDashboard(preset, page)` hook holds the preset and the offset, requ
 
 ### Presets only, the server resolves the range
 
-The UI sends `preset` and never a date; the API resolves the current and comparison ranges in the user's timezone and echoes them. The toolbar renders `period.from` and `period.to` from the response, so the label cannot drift from the query. Alternative: the client computing ranges, rejected as duplicated calendar logic and a second source of truth.
+The UI sends `preset` and never a date; the API resolves the current and comparison ranges in the user's timezone and echoes them. The toolbar renders `period.from` and `period.end` from the response, so the label cannot drift from the query. Alternative: the client computing ranges, rejected as duplicated calendar logic and a second source of truth.
 
 ### Charts with Recharts and the shadcn wrapper
 
@@ -66,7 +66,7 @@ Amounts are formatted with `Intl.NumberFormat(undefined, { style: "currency", cu
 - **A date shifting by a day in the browser's timezone.** → Format date-only values in UTC.
 - **A stale response overwriting a newer one.** → Abort the in-flight requests on preset or page change.
 - **Currencies without two decimals.** → `Intl.NumberFormat` applies the currency's own exponent.
-- **A full-period axis without a projection leaves an empty right side.** → Intended: that space is where the projection lands once the comparison period has data, and the header still names the actual data range.
+- **A full-period axis without a projection leaves an empty right side.** → Intended: that space is where the projection lands once the comparison period has data, and the header still names the full period.
 
 ## Open Questions
 
