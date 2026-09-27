@@ -1,4 +1,4 @@
-FROM node:24-slim
+FROM node:25-slim
 WORKDIR /app
 COPY api/package.json api/package-lock.json ./api/
 RUN cd api && npm ci --omit=dev
