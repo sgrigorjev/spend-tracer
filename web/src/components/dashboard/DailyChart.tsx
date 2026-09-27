@@ -56,7 +56,7 @@ export function DailyChart({
             x={period.to}
             stroke="var(--muted-foreground)"
             strokeDasharray="4 4"
-            label={{ value: "Today", position: "top", fill: "var(--muted-foreground)", fontSize: 11 }}
+            label={{ value: "Today", position: "insideTop", fill: "var(--muted-foreground)", fontSize: 11, offset: 8 }}
           />
           <XAxis
             dataKey="date"
