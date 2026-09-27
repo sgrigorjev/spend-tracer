@@ -16,6 +16,8 @@
 
 **Triggers.** `pull_request` plus `workflow_dispatch` for manual runs. No `push` to main, since the PR run already covers the change. No schedule, since a nightly run nobody opens is noise.
 
+**Trim the forwarded Host header.** The first scan flagged `proxy_set_header Host $host;` in `web/nginx.conf` as a blocking finding (`generic.nginx.security.request-host-used`). The API verifies the Google ID token server-side and builds no URL from the Host header, so forwarding the client-controlled value buys nothing. Removing the line lets nginx send its default `$proxy_host` (`api:3000`) and clears the finding without suppressing the rule.
+
 ## Risks
 
 - `p/owasp-top-ten` is about 1.4 MB of rules and `p/security-audit` is large too, so the first scan can be slow and can flag pre-existing code. Because `--error` fails on any finding, the check may be red before any new code. If that proves noisy, add `--severity ERROR` so only high-severity findings fail.
