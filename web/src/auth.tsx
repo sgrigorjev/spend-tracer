@@ -27,6 +27,8 @@ interface AuthState {
   loading: boolean;
   login: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Re-read the session user, e.g. after the profile settings change. */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -35,16 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (res) => {
-        if (res.ok) {
-          const data = (await res.json()) as { user: User };
-          setUser(data.user);
-        }
-      })
-      .finally(() => setLoading(false));
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/auth/me");
+    if (res.ok) {
+      const data = (await res.json()) as { user: User };
+      setUser(data.user);
+    } else {
+      setUser(null);
+    }
   }, []);
+
+  useEffect(() => {
+    void refresh().finally(() => setLoading(false));
+  }, [refresh]);
 
   const login = useCallback(async (idToken: string) => {
     const res = await fetch("/api/auth/google", {
@@ -65,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );
