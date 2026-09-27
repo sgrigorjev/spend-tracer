@@ -8,7 +8,7 @@ Lets a signed-in user read their own expenses over a chosen period as dashboard 
 
 ### Requirement: Period presets
 
-The system SHALL accept a period preset of `day`, `week`, `two_weeks` or `month`, defaulting to `month`, and an optional anchor date defaulting to today in the user's display timezone. It SHALL resolve the current range as local calendar dates and return the resolved range, with the range running through the anchor day.
+The system SHALL accept a period preset of `day`, `week`, `two_weeks` or `month`, defaulting to `month`, and an optional anchor date defaulting to today in the user's display timezone. It SHALL resolve the current range as local calendar dates and return the resolved range, with the range running through the anchor day, together with the last day of the period's calendar unit.
 
 #### Scenario: Month default
 
@@ -34,6 +34,11 @@ The system SHALL accept a period preset of `day`, `week`, `two_weeks` or `month`
 
 - **WHEN** a request supplies a preset outside the allowed set
 - **THEN** the system responds with 400
+
+#### Scenario: Period end returned
+
+- **WHEN** a summary or list request resolves a period
+- **THEN** the returned period carries both the anchor day it runs through and the last day of its calendar unit
 
 ### Requirement: Previous-period comparison
 
