@@ -1,0 +1,37 @@
+# GitHub release notes configuration. The categories below group merged PRs
+# into the auto-generated notes for a new release.
+#
+# Rule: any PR that archives an OpenSpec change (moves openspec/changes/<name>/
+# to openspec/changes/archive/) must carry the `ignore-for-release` label, so
+# archive churn stays out of the release notes. The exclude block below drops
+# those PRs, and the automated dependency PRs, from every release.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+      - renovate
+      - github-actions
+  categories:
+    - title: 🚀 Features
+      labels:
+        - feature
+        - enhancement
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+        - fix
+        - bugfix
+    - title: 🧰 Maintenance
+      labels:
+        - chore
+        - maintenance
+        - dependencies
+    - title: 📝 Documentation
+      labels:
+        - docs
+        - documentation
+    - title: Other Changes
+      labels:
+        - "*"
