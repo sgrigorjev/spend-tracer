@@ -34,6 +34,8 @@ export const config = {
   port: Number.parseInt(optional("API_PORT", "3000"), 10),
   // One shared database file for the bot and the API.
   dbPath: optional("DB_PATH", "data/spend-tracer.db"),
+  // Currency every stored amount is normalized to; must match the bot's value.
+  baseCurrency: optional("BASE_CURRENCY", "EUR").trim().toUpperCase(),
   // Bot username used to build the Telegram deep link; empty disables the link URL.
   telegramBotUsername: optional("TELEGRAM_BOT_USERNAME", ""),
   // Logging mirrors the bot: minimum level, optional file, pretty output.

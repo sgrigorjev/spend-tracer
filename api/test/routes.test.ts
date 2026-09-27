@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import type { ExpenseInsert } from "../src/db.ts";
 
 // config.ts reads required env vars at import time; set minimal values.
 process.env.GOOGLE_CLIENT_ID = "test-client-id";
@@ -14,7 +15,30 @@ const { createStore } = await import("../src/db.ts");
 const { registerTelegramRoutes } = await import("../src/routes/telegram.ts");
 const { registerFamilyRoutes } = await import("../src/routes/family.ts");
 const { registerSettingsRoutes } = await import("../src/routes/settings.ts");
+const { registerExpensesRoutes } = await import("../src/routes/expenses.ts");
 const { protectDocs } = await import("../src/guard.ts");
+
+/** A confirmed expense row with sensible defaults, for seeding via the store. */
+function expense(userId: number, overrides: Partial<ExpenseInsert> = {}): ExpenseInsert {
+  return {
+    user_id: userId,
+    amount_minor: 1000,
+    currency: "EUR",
+    base_amount_minor: 1000,
+    base_currency: "EUR",
+    fx_rate: 1,
+    fx_rate_date: "2026-09-01",
+    category: "groceries",
+    description: "seed",
+    paid_at: "2026-09-01T10:00:00+02:00",
+    paid_at_precision: "minute",
+    expense_date: "2026-09-01",
+    source: "text",
+    confidence: 0.95,
+    status: "confirmed",
+    ...overrides,
+  };
+}
 
 /** Build a test app where the `x-test-user` header seeds the session. */
 async function buildTestApp() {
@@ -28,6 +52,7 @@ async function buildTestApp() {
   registerTelegramRoutes(app, store);
   registerFamilyRoutes(app, store);
   registerSettingsRoutes(app, store);
+  registerExpensesRoutes(app, store);
   protectDocs(app, store);
   await app.ready();
   return { app, store };
@@ -42,6 +67,8 @@ test("telegram and family endpoints reject unauthenticated requests", async () =
     ["GET", "/api/family/scope"],
     ["GET", "/api/settings"],
     ["PATCH", "/api/settings"],
+    ["GET", "/api/expenses/summary"],
+    ["GET", "/api/expenses"],
   ];
   for (const [method, url] of routes) {
     const res = await app.inject({ method: method as "GET" | "POST" | "PATCH", url });
@@ -194,6 +221,131 @@ test("the API docs are behind the session", async () => {
 
   const signedIn = await app.inject({ method: "GET", url: "/api/docs/json", headers: { "x-test-user": String(userId) } });
   assert.equal(signedIn.statusCode, 200);
+
+  await app.close();
+  store.close();
+});
+
+function signIn(store: Awaited<ReturnType<typeof buildTestApp>>["store"], email: string, subject: string): number {
+  return store.resolveUser({ email, name: email, avatar: null, provider: "google", subject }).id;
+}
+
+test("the expenses summary reports the period, pending and the projection", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = signIn(store, "a@example.com", "sub-a");
+  const headers = { "x-test-user": String(userId) };
+
+  store.appendExpense(expense(userId, { expense_date: "2026-09-05", base_amount_minor: 1000, category: "groceries" }));
+  store.appendExpense(expense(userId, { expense_date: "2026-09-06", base_amount_minor: 2000, category: "transport" }));
+  store.appendExpense(expense(userId, { expense_date: "2026-09-07", base_amount_minor: 500, category: "dining", status: "pending" }));
+  store.appendExpense(expense(userId, { expense_date: "2026-09-08", base_amount_minor: 9999, category: "groceries", status: "rejected" }));
+  // 2026-08-10 is a Monday, and August 2026 has five Mondays.
+  store.appendExpense(expense(userId, { expense_date: "2026-08-10", base_amount_minor: 4000, category: "groceries" }));
+
+  const res = await app.inject({ method: "GET", url: "/api/expenses/summary?preset=month&date=2026-09-27", headers });
+  assert.equal(res.statusCode, 200);
+  const body = res.json() as {
+    currency: string;
+    total: number;
+    count: number;
+    pendingCount: number;
+    pendingTotal: number;
+    period: { preset: string; from: string; to: string };
+    comparison: { from: string; to: string };
+    daily: Array<{ date: string; amount: number; count: number }>;
+    byCategory: Array<{ category: string; amount: number; share: number }>;
+    topCategory: { category: string } | null;
+    projected: Array<{ date: string; amount: number }>;
+    projectedTotal: number | null;
+  };
+
+  assert.equal(body.currency, "EUR");
+  assert.deepEqual(body.period, { preset: "month", from: "2026-09-01", to: "2026-09-27" });
+  assert.deepEqual(body.comparison, { from: "2026-08-01", to: "2026-08-31" });
+  assert.equal(body.total, 30);
+  assert.equal(body.count, 3);
+  assert.equal(body.pendingCount, 1);
+  assert.equal(body.pendingTotal, 5);
+  assert.equal(body.daily.length, 27);
+  assert.deepEqual(body.daily.find((day) => day.date === "2026-09-07"), { date: "2026-09-07", amount: 0, count: 1 });
+  assert.deepEqual(body.byCategory, [
+    { category: "transport", amount: 20, share: 2000 / 3000 },
+    { category: "groceries", amount: 10, share: 1000 / 3000 },
+  ]);
+  assert.equal(body.topCategory?.category, "transport");
+  assert.deepEqual(body.projected, [
+    { date: "2026-09-28", amount: 8 },
+    { date: "2026-09-29", amount: 0 },
+    { date: "2026-09-30", amount: 0 },
+  ]);
+  assert.equal(body.projectedTotal, 38);
+
+  await app.close();
+  store.close();
+});
+
+test("the expenses list and summary are scoped to the signed-in user", async () => {
+  const { app, store } = await buildTestApp();
+  const alice = signIn(store, "a@example.com", "sub-a");
+  const bob = signIn(store, "b@example.com", "sub-b");
+
+  store.appendExpense(expense(alice, { expense_date: "2026-09-05", base_amount_minor: 1000 }));
+  store.appendExpense(expense(alice, { expense_date: "2026-09-06", base_amount_minor: 2000 }));
+  store.appendExpense(expense(alice, { expense_date: "2026-09-06", base_amount_minor: 300, status: "pending" }));
+  store.appendExpense(expense(alice, { expense_date: "2026-09-07", base_amount_minor: 9999, status: "rejected" }));
+  store.appendExpense(expense(bob, { expense_date: "2026-09-05", base_amount_minor: 7777 }));
+
+  const headers = { "x-test-user": String(alice) };
+  const first = await app.inject({ method: "GET", url: "/api/expenses?preset=month&date=2026-09-27&limit=2&offset=0", headers });
+  assert.equal(first.statusCode, 200);
+  const page = first.json() as { total: number; items: Array<{ id: number; status: string }> };
+  assert.equal(page.total, 3);
+  assert.equal(page.items.length, 2);
+  assert.equal(page.items.every((item) => item.status !== "rejected"), true);
+
+  const second = await app.inject({ method: "GET", url: "/api/expenses?preset=month&date=2026-09-27&limit=2&offset=2", headers });
+  const rest = (second.json() as { items: Array<{ id: number }> }).items;
+  const ids = [...page.items, ...rest].map((item) => item.id);
+  assert.equal(new Set(ids).size, 3);
+
+  // Bob's 7777 never reaches Alice's summary.
+  const summary = await app.inject({ method: "GET", url: "/api/expenses/summary?preset=month&date=2026-09-27", headers });
+  assert.equal((summary.json() as { total: number }).total, 30);
+
+  await app.close();
+  store.close();
+});
+
+test("the projection follows the preset and stays empty without a remainder", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = signIn(store, "a@example.com", "sub-a");
+  const headers = { "x-test-user": String(userId) };
+  // 2026-09-16 is a Wednesday inside the previous week.
+  store.appendExpense(expense(userId, { expense_date: "2026-09-16", base_amount_minor: 2000 }));
+  store.appendExpense(expense(userId, { expense_date: "2026-08-10", base_amount_minor: 4000 }));
+
+  const week = await app.inject({ method: "GET", url: "/api/expenses/summary?preset=week&date=2026-09-21", headers });
+  const weekBody = week.json() as { projected: Array<{ date: string; amount: number }>; projectedTotal: number | null };
+  assert.deepEqual(weekBody.projected.map((day) => day.date), [
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24",
+    "2026-09-25",
+    "2026-09-26",
+    "2026-09-27",
+  ]);
+  assert.equal(weekBody.projected.find((day) => day.date === "2026-09-23")?.amount, 20);
+
+  for (const preset of ["day", "two_weeks"]) {
+    const res = await app.inject({ method: "GET", url: `/api/expenses/summary?preset=${preset}&date=2026-09-21`, headers });
+    const body = res.json() as { projected: unknown[]; projectedTotal: number | null };
+    assert.deepEqual(body.projected, [], `${preset} should have no remainder`);
+    assert.equal(body.projectedTotal, null);
+  }
+
+  // The comparison month (December 2025) has no spending.
+  const empty = await app.inject({ method: "GET", url: "/api/expenses/summary?preset=month&date=2026-01-15", headers });
+  assert.equal((empty.json() as { projectedTotal: number | null }).projectedTotal, null);
 
   await app.close();
   store.close();

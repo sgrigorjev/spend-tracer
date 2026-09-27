@@ -142,3 +142,83 @@ test("updateExpense edits selected fields and stores nulls", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("expenseSummary aggregates confirmed spend and counts pending separately", () => {
+  const store = createStore(":memory:");
+  const userId = newUser(store);
+  const otherId = store.resolveUser({
+    email: "other@example.com",
+    name: "Other",
+    avatar: null,
+    provider: "google",
+    subject: "sub-2",
+  }).id;
+
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-01", base_amount_minor: 1000, category: "groceries" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-01", base_amount_minor: 500, category: "transport" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-02", base_amount_minor: 300, category: "dining", status: "pending" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-02", base_amount_minor: 9999, category: "groceries", status: "rejected" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: 700, category: null }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: null, category: "other" }));
+  // A second user's spend must never leak into the first user's summary.
+  store.appendExpense(expenseRow(otherId, { expense_date: "2026-09-01", base_amount_minor: 8888 }));
+
+  const summary = store.expenseSummary(userId, "2026-09-01", "2026-09-03");
+  assert.equal(summary.confirmed_total_minor, 2200);
+  assert.equal(summary.confirmed_count, 4);
+  assert.equal(summary.pending_total_minor, 300);
+  assert.equal(summary.pending_count, 1);
+  assert.deepEqual(summary.by_day, [
+    { date: "2026-09-01", total_minor: 1500, count: 2 },
+    { date: "2026-09-02", total_minor: 0, count: 1 },
+    { date: "2026-09-03", total_minor: 700, count: 2 },
+  ]);
+  assert.deepEqual(summary.by_category, [
+    { category: "groceries", total_minor: 1000 },
+    { category: "other", total_minor: 700 },
+    { category: "transport", total_minor: 500 },
+  ]);
+  store.close();
+});
+
+test("listExpenses pages non-rejected rows in a stable order", () => {
+  const store = createStore(":memory:");
+  const userId = newUser(store);
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-01", base_amount_minor: 1000 }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-02", base_amount_minor: 300, status: "pending" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-02", base_amount_minor: 9999, status: "rejected" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: 700 }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: 200 }));
+
+  const first = store.listExpenses(userId, "2026-09-01", "2026-09-03", 2, 0);
+  assert.equal(first.total, 4);
+  assert.deepEqual(first.items.map((row) => row.expense_date), ["2026-09-03", "2026-09-03"]);
+
+  const seen = new Set<number>();
+  for (let offset = 0; offset < first.total; offset += 2) {
+    for (const row of store.listExpenses(userId, "2026-09-01", "2026-09-03", 2, offset).items) {
+      assert.equal(seen.has(row.id), false, "a row should not repeat across pages");
+      seen.add(row.id);
+    }
+  }
+  assert.equal(seen.size, 4);
+  store.close();
+});
+
+test("spendByWeekday sums confirmed spend per weekday", () => {
+  const store = createStore(":memory:");
+  const userId = newUser(store);
+  // 2026-09-01 is a Tuesday (2), 2026-09-03 a Thursday (4).
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-01", base_amount_minor: 1000 }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-01", base_amount_minor: 500 }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: 700 }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: 9999, status: "rejected" }));
+  store.appendExpense(expenseRow(userId, { expense_date: "2026-09-03", base_amount_minor: null }));
+
+  const rows = store.spendByWeekday(userId, "2026-09-01", "2026-09-03").sort((a, b) => a.weekday - b.weekday);
+  assert.deepEqual(rows, [
+    { weekday: 2, total_minor: 1500 },
+    { weekday: 4, total_minor: 700 },
+  ]);
+  store.close();
+});
