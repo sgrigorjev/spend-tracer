@@ -95,11 +95,6 @@ export function useExpenseDashboard(): ExpenseDashboard {
     setError(false);
 
     const summaryUrl = `/api/expenses/summary?${new URLSearchParams({ preset })}`;
-    const listUrl = `/api/expenses?${new URLSearchParams({
-      preset,
-      limit: String(PAGE_SIZE),
-      offset: String(page * PAGE_SIZE),
-    })}`;
 
     const get = <T,>(url: string): Promise<T> =>
       fetch(url, { signal: controller.signal }).then((res) => {
@@ -107,7 +102,18 @@ export function useExpenseDashboard(): ExpenseDashboard {
         return res.json() as Promise<T>;
       });
 
-    Promise.all([get<Summary>(summaryUrl), get<ExpenseList>(listUrl)])
+    // Fetch the summary first and anchor the list to its resolved day, so the two
+    // requests cannot land on opposite sides of local midnight and disagree.
+    get<Summary>(summaryUrl)
+      .then((nextSummary) => {
+        const listUrl = `/api/expenses?${new URLSearchParams({
+          preset,
+          date: nextSummary.period.to,
+          limit: String(PAGE_SIZE),
+          offset: String(page * PAGE_SIZE),
+        })}`;
+        return get<ExpenseList>(listUrl).then((nextList) => [nextSummary, nextList] as const);
+      })
       .then(([nextSummary, nextList]) => {
         setSummary(nextSummary);
         setList(nextList);

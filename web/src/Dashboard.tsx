@@ -20,7 +20,7 @@ export function Dashboard() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Expenses</h1>
           <p className="text-sm text-muted-foreground">
-            {summary
+            {summary?.period.preset === preset
               ? `${formatDay(summary.period.from)} – ${formatDay(summary.period.end, {
                   month: "short",
                   day: "numeric",

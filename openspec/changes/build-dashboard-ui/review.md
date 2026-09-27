@@ -12,3 +12,10 @@ Independent pass by the `reviewer` subagent (`deepseek/deepseek-v4-pro`), read-o
 | 6 | nit | `web/src/lib/format.ts` | The pure format helpers are untested and their input units are easy to get wrong. | declined: `web/` has no test runner; adding one is a separate tooling change. The doc comments now name the units. |
 
 Verdict: no blocker or major finding; findings 1-4 applied, 5-6 declined with reasons.
+
+## CodeRabbit (PR #42)
+
+| # | Severity | Location | Finding | Disposition |
+|---|----------|----------|---------|-------------|
+| 7 | minor | `web/src/components/dashboard/useExpenseDashboard.ts` | The summary and list requests sent only `preset`, so a run straddling local midnight could resolve different periods for the cards and the table. | applied: the summary is fetched first and the list is anchored to its `period.to`. |
+| 8 | minor | `web/src/Dashboard.tsx` | After a failed request the heading could show the previous period beside the newly selected preset. | applied: the range renders only when `summary.period.preset` matches the selected preset. |
