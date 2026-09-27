@@ -18,8 +18,8 @@ const updateBody = z.object({
 /** Currencies the runtime supports, used as the ISO-4217 allowlist. */
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf("currency"));
 
-/** Offset strings like "+01:00" are accepted by Intl but are not IANA zone names. */
-const OFFSET_TIME_ZONE = /^[+-]\d{2}:?\d{2}$/;
+/** Offset strings like "+01", "+0100" and "+01:00" are accepted by Intl but are not IANA zone names. */
+const OFFSET_TIME_ZONE = /^[+-]\d{2}(:?\d{2})?$/;
 
 /** Whether the runtime recognises the code as a supported currency. */
 function isSupportedCurrency(code: string): boolean {

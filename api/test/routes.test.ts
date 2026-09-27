@@ -165,6 +165,11 @@ test("settings can be read and updated, and invalid values are rejected", async 
   assert.equal(offset.statusCode, 400);
   assert.equal((offset.json() as { code: string }).code, "invalid_timezone");
 
+  // Hour-only offsets are accepted by Intl too, and must be rejected as well.
+  const hourOnlyOffset = await app.inject({ method: "PATCH", url: "/api/settings", headers, payload: { display_timezone: "+01" } });
+  assert.equal(hourOnlyOffset.statusCode, 400);
+  assert.equal((hourOnlyOffset.json() as { code: string }).code, "invalid_timezone");
+
   const after = await app.inject({ method: "GET", url: "/api/settings", headers });
   assert.deepEqual(after.json(), { display_currency: "USD", display_timezone: "America/New_York" });
 
