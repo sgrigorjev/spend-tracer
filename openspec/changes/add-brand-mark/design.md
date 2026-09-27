@@ -18,7 +18,7 @@ Non-Goals:
 
 ### Fixed orange tile instead of the theme `primary`
 
-The mark uses a fixed orange tile with a white glyph rather than `bg-primary text-primary-foreground`. A theme-dependent tile flips black to white, which is exactly the mismatch with the favicon this change removes. Orange with white keeps one appearance on both themes and matches the favicon. The colour is referenced as `bg-[var(--chart-1)]` and the glyph as `text-white`, so it tracks the token the favicon was built from.
+The mark uses a fixed orange tile with a white glyph rather than `bg-primary text-primary-foreground`. A theme-dependent tile flips black to white, which is exactly the mismatch with the favicon this change removes. Orange with white keeps one appearance on both themes and matches the favicon. The colour is referenced as `bg-chart-1` and the glyph as `text-white`, so it tracks the token the favicon was built from.
 
 Alternative considered: keep `bg-primary` and only tint the glyph. Rejected because the tile colour is the most visible part of the favicon, so the mark would still not match.
 
