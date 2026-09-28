@@ -248,8 +248,11 @@ export async function importStatement(
         drafts = applyProfile(grid, { roles: mapping.roles, directives });
         integrity = checkIntegrity(drafts);
         if (integrity.ok) break;
-        mapping = await deps.generateMapping({ kind, headers, sample, feedback: integrity.reason });
-        directives = { ...mapping.directives, header_row: headerRow + 1 };
+        // Only ask again when another attempt will actually use the reply.
+        if (attempt === 0) {
+          mapping = await deps.generateMapping({ kind, headers, sample, feedback: integrity.reason });
+          directives = { ...mapping.directives, header_row: headerRow + 1 };
+        }
       }
       if (!integrity.ok) {
         throw new Error(

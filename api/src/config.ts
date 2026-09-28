@@ -14,6 +14,7 @@ loadEnv({ path: path.resolve(repoRoot, ".env") });
  * matter which directory they were started from.
  */
 function resolveDbPath(value: string): string {
+  if (value === ":memory:") return value;
   return path.isAbsolute(value) ? value : path.resolve(repoRoot, value);
 }
 
