@@ -63,6 +63,8 @@ export function validateMapping(raw: { roles?: unknown; directives?: unknown }):
   for (const [key, value] of Object.entries(raw.roles as Record<string, unknown>)) {
     if (!(ROLE_KEYS as string[]).includes(key)) throw new Error(`unknown role: ${key}`);
     if (value === null || value === undefined) continue;
+    // The model sometimes writes the string "null" for an absent column.
+    if (typeof value === "string" && ["", "null", "none", "n/a"].includes(value.trim().toLowerCase())) continue;
     if (typeof value !== "string" || value.length > 64 || /[=();{}]/.test(value)) {
       throw new Error(`invalid column reference for role ${key}`);
     }

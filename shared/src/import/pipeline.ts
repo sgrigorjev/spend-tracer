@@ -204,7 +204,7 @@ export async function importStatement(
   if (bytes.length > MAX_STATEMENT_BYTES) throw new Error("statement file is too large");
   const kind = detectKind(bytes);
 
-  let drafts: TransactionDraft[];
+  let drafts: TransactionDraft[] = [];
   let bank: string | null = null;
   let profileState: ImportSummary["profile"] = "none";
 
@@ -218,10 +218,7 @@ export async function importStatement(
     const fingerprint = formatFingerprint(kind, headers, sample);
     const existing = store.findProfile(user.id, fingerprint);
 
-    if (existing && existing.status === "draft") {
-      throw new Error("this format has a profile awaiting confirmation");
-    }
-    if (existing) {
+    if (existing && existing.status === "verified") {
       drafts = applyProfile(grid, existing);
       const integrity = checkIntegrity(drafts);
       if (!integrity.ok) throw new Error(`statement failed verification: ${integrity.reason}`);
@@ -229,20 +226,33 @@ export async function importStatement(
       bank = existing.bank;
       profileState = "reused";
     } else {
-      const mapping = await deps.generateMapping({ kind, headers, sample });
-      const directives = { ...mapping.directives, header_row: headerRow + 1 };
-      store.saveProfile({
-        user_id: user.id,
-        fingerprint,
-        bank: mapping.bank,
-        kind,
-        roles: mapping.roles,
-        directives,
-        status: "draft" satisfies ImportProfileStatus,
-      });
-      drafts = applyProfile(grid, { roles: mapping.roles, directives });
-      const integrity = checkIntegrity(drafts);
-      if (!integrity.ok) throw new Error(`learned profile failed verification: ${integrity.reason}`);
+      // A draft here means an earlier attempt failed or was not confirmed, so
+      // learn again rather than reuse it. Two attempts: the second is told why
+      // the first failed, which corrects an ambiguous two-amount mapping.
+      let mapping = await deps.generateMapping({ kind, headers, sample });
+      let directives = { ...mapping.directives, header_row: headerRow + 1 };
+      let integrity: IntegrityResult = { ok: false, reason: "mapping not applied yet" };
+      for (let attempt = 0; attempt < 2; attempt++) {
+        store.saveProfile({
+          user_id: user.id,
+          fingerprint,
+          bank: mapping.bank,
+          kind,
+          roles: mapping.roles,
+          directives,
+          status: "draft" satisfies ImportProfileStatus,
+        });
+        drafts = applyProfile(grid, { roles: mapping.roles, directives });
+        integrity = checkIntegrity(drafts);
+        if (integrity.ok) break;
+        mapping = await deps.generateMapping({ kind, headers, sample, feedback: integrity.reason });
+        directives = { ...mapping.directives, header_row: headerRow + 1 };
+      }
+      if (!integrity.ok) {
+        throw new Error(
+          `learned profile failed verification: ${integrity.reason}. Mapped roles: ${JSON.stringify(mapping.roles)}`,
+        );
+      }
       const profile = store.findProfile(user.id, fingerprint)!;
       const confirmed = await deps.confirmProfile({ profile, bank: mapping.bank, rows: drafts, integrity });
       if (!confirmed) {
