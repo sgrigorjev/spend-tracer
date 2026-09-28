@@ -107,7 +107,7 @@ test("pipeline refuses a binary file before calling the model", async () => {
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async () => ({ action: "separate" as const }),
   };
   await assert.rejects(
@@ -435,7 +435,7 @@ test("rows from one statement never match each other", async () => {
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async () => {
       asked++;
       return { action: "separate" as const };
@@ -463,7 +463,7 @@ test("pipeline refuses an oversized statement", async () => {
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async () => ({ action: "separate" as const }),
   };
   await assert.rejects(
@@ -503,7 +503,7 @@ test("an uncertain match honors the decision and is not asked twice", async () =
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async (input: { ranked: Array<{ expense: { id: number } }> }) => {
       asked++;
       return { action: "merge" as const, expenseId: input.ranked[0].expense.id };
@@ -530,7 +530,7 @@ test("a linked expense exposes the card and bank", async () => {
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async () => ({ action: "separate" as const }),
   };
   await importStatement(store, user, { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" }, deps);
@@ -543,6 +543,43 @@ test("a linked expense exposes the card and bank", async () => {
   store.close();
 });
 
+test("a user-supplied bank name overrides the mapping's name on the profile", async () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => ({ bank: "Detected Bank", roles: CSV_ROLES, directives: CSV_DIRECTIVES }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => ({ confirmed: true, bank: "PrivatBank" }),
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await importStatement(store, user, { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" }, deps);
+
+  const profile = store.listProfiles(user.id)[0];
+  assert.equal(profile.bank, "PrivatBank");
+  const expense = store.listExpensesForUser(user.id, "2026-01-01", "2026-12-31", 10, 0).items[0];
+  assert.equal(store.findLinkedTransaction(expense.id)?.bank, "PrivatBank");
+  store.close();
+});
+
+test("a confirmation without a bank name keeps the mapping's name", async () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => ({ bank: "Detected Bank", roles: CSV_ROLES, directives: CSV_DIRECTIVES }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => ({ confirmed: true }),
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await importStatement(store, user, { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" }, deps);
+
+  assert.equal(store.listProfiles(user.id)[0].bank, "Detected Bank");
+  store.close();
+});
+
 test("a rejected learned profile is discarded", async () => {
   const store = createStore(":memory:");
   const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
@@ -551,7 +588,7 @@ test("a rejected learned profile is discarded", async () => {
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => false,
+    confirmProfile: async () => ({ confirmed: false }),
     decide: async () => ({ action: "separate" as const }),
   };
   await assert.rejects(
@@ -573,7 +610,7 @@ test("pipeline learns a profile, then reuses it and skips duplicates", async () 
     extractDocument: async () => {
       throw new Error("not used");
     },
-    confirmProfile: async () => true,
+    confirmProfile: async () => ({ confirmed: true }),
     decide: async () => ({ action: "separate" as const }),
   };
 

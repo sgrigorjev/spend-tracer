@@ -35,8 +35,18 @@ export interface ProfilePreview {
   integrity: IntegrityResult;
 }
 
-/** Called once for a new format; returns true to accept the profile. */
-export type ProfileConfirmer = (preview: ProfilePreview) => Promise<boolean>;
+/** What the user decided at the profile preview. */
+export interface ProfileConfirmation {
+  confirmed: boolean;
+  /**
+   * A bank name to store. Omitting the field keeps the mapping's name; setting
+   * it, including to null, overrides the mapping's name.
+   */
+  bank?: string | null;
+}
+
+/** Called once for a new format; accepts the profile and may set its bank. */
+export type ProfileConfirmer = (preview: ProfilePreview) => Promise<ProfileConfirmation>;
 
 /** One uncertain match offered to the user, with its ranked candidates. */
 export interface DecisionInput {
@@ -260,14 +270,22 @@ export async function importStatement(
         );
       }
       const profile = store.findProfile(user.id, fingerprint)!;
-      const confirmed = await deps.confirmProfile({ profile, bank: mapping.bank, rows: drafts, integrity });
-      if (!confirmed) {
+      const confirmation = await deps.confirmProfile({ profile, bank: mapping.bank, rows: drafts, integrity });
+      if (!confirmation.confirmed) {
         // Drop the rejected draft so the user can retry the format later.
         store.deleteProfile(user.id, fingerprint);
         throw new Error("profile rejected");
       }
+      // A user-supplied name overrides the mapping's, so the stored profile
+      // matches the statement it produced.
+      if (confirmation.bank !== undefined) {
+        const typed = confirmation.bank?.trim().slice(0, 120) || null;
+        store.setProfileBank(user.id, fingerprint, typed);
+        bank = typed;
+      } else {
+        bank = mapping.bank;
+      }
       store.setProfileStatus(user.id, fingerprint, "verified");
-      bank = mapping.bank;
       profileState = "learned";
     }
   } else {
