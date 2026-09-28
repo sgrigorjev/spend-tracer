@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, CircleAlert, ExternalLink, Link2 } from "lucide-react";
+import { Check, CircleAlert, ExternalLink, Link2, Unlink } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Button, buttonVariants } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -36,6 +36,8 @@ export function TelegramSettings() {
   const [now, setNow] = useState(() => Date.now());
   const [issuing, setIssuing] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [confirmingUnlink, setConfirmingUnlink] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
@@ -99,6 +101,29 @@ export function TelegramSettings() {
     setError(null);
   }, []);
 
+  const unlinkTelegram = useCallback(async () => {
+    setUnlinking(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/telegram/link", { method: "DELETE" });
+      if (!mounted.current) return;
+      if (!res.ok) {
+        setConfirmingUnlink(false);
+        setError("Could not unlink Telegram. Try again.");
+        return;
+      }
+      setConfirmingUnlink(false);
+      setAccount("unlinked");
+    } catch {
+      if (mounted.current) {
+        setConfirmingUnlink(false);
+        setError("Could not unlink Telegram. Try again.");
+      }
+    } finally {
+      if (mounted.current) setUnlinking(false);
+    }
+  }, []);
+
   // Drive the countdown, and mark the link expired the moment it runs out.
   useEffect(() => {
     if (!pending || expired) return;
@@ -115,12 +140,15 @@ export function TelegramSettings() {
   // Poll the link status while the panel is open and the token is still valid.
   useEffect(() => {
     if (!pending || expired) return;
+    let cancelled = false;
     const id = window.setInterval(async () => {
       try {
         const res = await fetch("/api/telegram/link/status");
         if (!res.ok) return;
         const data = (await res.json()) as { linked: boolean };
-        if (data.linked) {
+        // Ignore a result that lands after this polling run was torn down, so a
+        // slow poll cannot restore the linked view after the user unlinks.
+        if (!cancelled && data.linked) {
           setPending(null);
           setAccount("linked");
         }
@@ -128,7 +156,10 @@ export function TelegramSettings() {
         // A failed poll is not fatal; the next tick retries.
       }
     }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
   }, [pending, expired]);
 
   const remaining = pending ? Math.max(0, Math.ceil((pending.expiresAt - now) / 1000)) : 0;
@@ -155,10 +186,47 @@ export function TelegramSettings() {
         )}
 
         {account === "linked" && (
-          <Alert variant="success">
-            <Check className="h-4 w-4 shrink-0" />
-            <AlertDescription>Telegram is linked. Messages you send the bot are recorded for this account.</AlertDescription>
-          </Alert>
+          <div className="space-y-4">
+            <Alert variant="success">
+              <Check className="h-4 w-4 shrink-0" />
+              <AlertDescription>Telegram is linked. Messages you send the bot are recorded for this account.</AlertDescription>
+            </Alert>
+
+            {error && (
+              <Alert variant="destructive">
+                <CircleAlert className="h-4 w-4 shrink-0" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {confirmingUnlink ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Unlink Telegram? The bot will stop recording messages from this account.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="destructive" onClick={() => void unlinkTelegram()} disabled={unlinking}>
+                    <Unlink /> {unlinking ? "Unlinking…" : "Unlink Telegram"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setConfirmingUnlink(false);
+                      setError(null);
+                    }}
+                    disabled={unlinking}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" onClick={() => setConfirmingUnlink(true)}>
+                <Unlink /> Unlink Telegram
+              </Button>
+            )}
+          </div>
         )}
 
         {account === "unlinked" && (

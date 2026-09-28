@@ -62,6 +62,39 @@ test("createLinkToken supersedes the user's earlier pending link", () => {
   store.close();
 });
 
+test("unlinkTelegram clears the mapping and is idempotent", () => {
+  const store = createStore(":memory:");
+  const userId = makeUser(store, "a@example.com", "sub-a");
+
+  const { token } = store.createLinkToken(userId, 600);
+  assert.ok(store.redeemLinkToken(token, 111).ok);
+  assert.equal(store.findUserByTelegramId(111)?.id, userId);
+
+  store.unlinkTelegram(userId);
+  assert.equal(store.findUserByTelegramId(111), undefined);
+  assert.equal(store.findUserById(userId)?.telegram_user_id, null);
+
+  // A second unlink of an already-unlinked account succeeds without changing it.
+  store.unlinkTelegram(userId);
+  assert.equal(store.findUserById(userId)?.telegram_user_id, null);
+
+  store.close();
+});
+
+test("unlinkTelegram discards a pending link token", () => {
+  const store = createStore(":memory:");
+  const userId = makeUser(store, "a@example.com", "sub-a");
+
+  const { token } = store.createLinkToken(userId, 600);
+  store.unlinkTelegram(userId);
+
+  const redeemed = store.redeemLinkToken(token, 111);
+  assert.equal(redeemed.ok, false);
+  if (!redeemed.ok) assert.equal(redeemed.reason, "unknown");
+
+  store.close();
+});
+
 test("createLinkToken purges expired and already-used tokens", () => {
   const store = createStore(":memory:");
   const expiredUserId = makeUser(store, "a@example.com", "sub-a");

@@ -188,6 +188,7 @@ export interface Store {
   // non-positive value mints an immediately expired token (used by tests).
   createLinkToken(userId: number, ttlSeconds: number): { token: string; expiresAt: string };
   redeemLinkToken(token: string, telegramUserId: number): RedeemResult;
+  unlinkTelegram(userId: number): void;
   // families
   createFamily(ownerId: number, name: string | null): FamilyResult;
   getFamilyForUser(userId: number): { family: FamilyRow; membership: FamilyMemberRow } | undefined;
@@ -651,6 +652,19 @@ export function createStore(dbPath: string): Store {
         throw err;
       }
       return { ok: true, userId: row.user_id };
+    },
+    unlinkTelegram(userId) {
+      // Clear the mapping and any live token together, so a crash cannot leave
+      // the account unlinked while a redeemable token still binds it again.
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        updateTelegram.run(null, userId);
+        deleteUserTokens.run(userId);
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
     },
 
     createFamily(ownerId, name) {
