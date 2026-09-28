@@ -322,6 +322,7 @@ export interface Store {
   // expenses
   appendExpense(row: ExpenseInsert): number;
   findExpenseById(id: number): ExpenseRow | undefined;
+  listExpensesMissingBase(): ExpenseRow[];
   setExpenseStatus(id: number, status: ExpenseStatus): void;
   updateExpense(id: number, fields: Partial<ExpenseUpdate>): void;
   expenseSummary(userId: number, from: string, to: string): ExpenseSummary;
@@ -631,6 +632,9 @@ export function createStore(dbPath: string): Store {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const selectExpenseById = db.prepare("SELECT * FROM expenses WHERE id = ?");
+  const selectExpensesMissingBase = db.prepare(
+    "SELECT * FROM expenses WHERE base_amount_minor IS NULL ORDER BY id",
+  );
   const updateStatus = db.prepare("UPDATE expenses SET status = ?, updated_at = ? WHERE id = ?");
 
   const selectSummaryTotals = db.prepare(`
@@ -990,6 +994,9 @@ export function createStore(dbPath: string): Store {
     },
     findExpenseById(id) {
       return selectExpenseById.get(id) as unknown as ExpenseRow | undefined;
+    },
+    listExpensesMissingBase() {
+      return selectExpensesMissingBase.all() as unknown as ExpenseRow[];
     },
     setExpenseStatus(id, status) {
       updateStatus.run(status, nowIso(), id);

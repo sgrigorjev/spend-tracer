@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createStore, type Store, type UserRow } from "../src/db.ts";
-import { getRate, type Fetcher } from "../../shared/src/fx.ts";
+import { getRate, backfillMissingRates, type Fetcher } from "../../shared/src/fx.ts";
 import { recordToExpense } from "../src/confirm.ts";
 import type { ExpenseRecord } from "../src/expenseSchema.ts";
 
@@ -48,9 +48,9 @@ test("an identity conversion needs no network", async () => {
 
 test("a weekend lookup uses the prior published rate and caches it", async () => {
   const store = createStore(":memory:");
-  const stub = stubFetcher({ date: "2026-08-28", rates: { EUR: 0.9 } });
+  const stub = stubFetcher({ date: "2026-08-28", rate: 0.9 });
   const first = await getRate(store, "USD", "EUR", "2026-08-30", stub.fn);
-  assert.deepEqual(first, { rate: 0.9, date: "2026-08-28", source: "frankfurter" });
+  assert.deepEqual(first, { rate: 0.9, date: "2026-08-28", source: "frankfurter-v2" });
 
   const second = await getRate(store, "USD", "EUR", "2026-08-30", stub.fn);
   assert.deepEqual(second, first);
@@ -83,8 +83,8 @@ test("a foreign-currency expense stores the base amount and rate from the cache"
 
 test("a later date fetches a fresh rate instead of reusing a cached one", async () => {
   const store = createStore(":memory:");
-  const first = stubFetcher({ date: "2026-09-01", rates: { EUR: 0.9 } });
-  const second = stubFetcher({ date: "2026-12-30", rates: { EUR: 0.85 } });
+  const first = stubFetcher({ date: "2026-09-01", rate: 0.9 });
+  const second = stubFetcher({ date: "2026-12-30", rate: 0.85 });
 
   const september = await getRate(store, "USD", "EUR", "2026-09-01", first.fn);
   assert.equal(september?.rate, 0.9);
@@ -104,5 +104,79 @@ test("falls back to the nearest earlier rate when the fetch fails", async () => 
   const rate = await getRate(store, "USD", "EUR", "2026-09-15", failing);
   assert.deepEqual(rate, { rate: 0.9, date: "2026-09-01", source: "test" });
 
+  store.close();
+});
+
+test("queries the Frankfurter v2 pair endpoint", async () => {
+  const store = createStore(":memory:");
+  let seen = "";
+  const fetcher: Fetcher = async (url) => {
+    seen = url;
+    return { ok: true, json: async () => ({ date: "2026-09-26", rate: 51.16 }) };
+  };
+  const rate = await getRate(store, "EUR", "UAH", "2026-09-26", fetcher);
+  assert.equal(seen, "https://api.frankfurter.dev/v2/rate/eur/uah?date=2026-09-26");
+  assert.deepEqual(rate, { rate: 51.16, date: "2026-09-26", source: "frankfurter-v2" });
+  store.close();
+});
+
+test("a malformed v2 response yields no rate", async () => {
+  const store = createStore(":memory:");
+  const notNumber = stubFetcher({ date: "2026-09-26", rate: "51.16" });
+  assert.equal(await getRate(store, "EUR", "UAH", "2026-09-26", notNumber.fn), null);
+
+  const missingRate = stubFetcher({ date: "2026-09-26" });
+  assert.equal(await getRate(store, "EUR", "UAH", "2026-09-27", missingRate.fn), null);
+  store.close();
+});
+
+test("backfill fills an empty base and leaves a filled row alone", async () => {
+  const store = createStore(":memory:");
+  const user = newUser(store);
+  const empty = store.appendExpense({
+    user_id: user.id,
+    amount_minor: 1000,
+    currency: "USD",
+    base_amount_minor: null,
+    base_currency: "EUR",
+    fx_rate: null,
+    fx_rate_date: null,
+    category: "other",
+    description: "US purchase",
+    paid_at: "2026-09-01",
+    paid_at_precision: "date",
+    expense_date: "2026-09-01",
+    source: "import",
+    confidence: 1,
+    status: "confirmed",
+  });
+  const filled = store.appendExpense({
+    user_id: user.id,
+    amount_minor: 500,
+    currency: "EUR",
+    base_amount_minor: 500,
+    base_currency: "EUR",
+    fx_rate: 1,
+    fx_rate_date: "2026-09-01",
+    category: "other",
+    description: "EU purchase",
+    paid_at: "2026-09-01",
+    paid_at_precision: "date",
+    expense_date: "2026-09-01",
+    source: "import",
+    confidence: 1,
+    status: "confirmed",
+  });
+
+  const stub = stubFetcher({ date: "2026-09-01", rate: 0.9 });
+  const result = await backfillMissingRates(store, "EUR", stub.fn);
+  assert.equal(result.total, 1);
+  assert.equal(result.filled, 1);
+  assert.equal(result.unresolved, 0);
+
+  const pages = store.listExpenses(user.id, "2026-09-01", "2026-09-01", 10, 0);
+  const byId = new Map(pages.items.map((row) => [row.id, row]));
+  assert.equal(byId.get(empty)!.base_amount_minor, 900);
+  assert.equal(byId.get(filled)!.base_amount_minor, 500);
   store.close();
 });
