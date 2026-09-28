@@ -108,13 +108,17 @@ export function TelegramSettings() {
       const res = await fetch("/api/telegram/link", { method: "DELETE" });
       if (!mounted.current) return;
       if (!res.ok) {
+        setConfirmingUnlink(false);
         setError("Could not unlink Telegram. Try again.");
         return;
       }
       setConfirmingUnlink(false);
       setAccount("unlinked");
     } catch {
-      if (mounted.current) setError("Could not unlink Telegram. Try again.");
+      if (mounted.current) {
+        setConfirmingUnlink(false);
+        setError("Could not unlink Telegram. Try again.");
+      }
     } finally {
       if (mounted.current) setUnlinking(false);
     }

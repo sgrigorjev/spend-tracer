@@ -54,6 +54,9 @@ test("the OpenAPI document lists every route with schemas", async () => {
 
   assert.deepEqual(Object.keys(doc.paths).sort(), expected);
 
+  // The unlink operation shares the link path, so assert the method itself.
+  assert.ok(doc.paths["/api/telegram/link"]?.delete, "the unlink DELETE operation should be documented");
+
   // Every operation must document a 200 response with a schema.
   for (const [path, methods] of Object.entries(doc.paths)) {
     for (const [method, operation] of Object.entries(methods)) {
