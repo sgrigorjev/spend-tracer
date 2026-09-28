@@ -362,6 +362,8 @@ export interface Store {
   appendStatement(row: StatementInsert): number;
   appendTransaction(row: TransactionInsert): number | null;
   findTransactionByFingerprint(userId: number, fingerprint: string): TransactionRow | undefined;
+  /** Card, account and bank carried by the statement a linked expense came from. */
+  findLinkedTransaction(expenseId: number): { card: string | null; account: string | null; bank: string | null } | undefined;
   listTransactions(statementId: number): TransactionRow[];
   setTransactionResolution(transactionId: number, resolution: TransactionResolution): void;
   saveProfile(row: ProfileInsert): number;
@@ -743,6 +745,11 @@ export function createStore(dbPath: string): Store {
     "SELECT * FROM bank_transactions WHERE user_id = ? AND fingerprint = ?",
   );
   const selectTransactionsByStatement = db.prepare("SELECT * FROM bank_transactions WHERE statement_id = ? ORDER BY id");
+  const selectLinkedTransaction = db.prepare(`
+    SELECT t.card AS card, t.account AS account, s.bank AS bank
+    FROM bank_transactions t JOIN bank_statements s ON s.id = t.statement_id
+    WHERE t.expense_id = ? ORDER BY t.id DESC LIMIT 1
+  `);
   const updateTransactionResolution = db.prepare(
     "UPDATE bank_transactions SET state = ?, expense_id = ? WHERE id = ?",
   );
@@ -1292,6 +1299,11 @@ export function createStore(dbPath: string): Store {
     },
     findTransactionByFingerprint(userId, fingerprint) {
       return selectTransactionByFingerprint.get(userId, fingerprint) as unknown as TransactionRow | undefined;
+    },
+    findLinkedTransaction(expenseId) {
+      return selectLinkedTransaction.get(expenseId) as unknown as
+        | { card: string | null; account: string | null; bank: string | null }
+        | undefined;
     },
     listTransactions(statementId) {
       return selectTransactionsByStatement.all(statementId) as unknown as TransactionRow[];

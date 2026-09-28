@@ -76,6 +76,9 @@ const listSchema = z.object({
       status: z.enum(["confirmed", "pending"]),
       shared: z.boolean(),
       participants: z.array(participantSchema),
+      // Card and bank from the statement, when an import confirmed the expense.
+      card: z.string().nullable(),
+      bank: z.string().nullable(),
     }),
   ),
 });
@@ -202,6 +205,7 @@ export function registerExpensesRoutes(app: App, store: Store): void {
             role: p.role,
             origin: p.origin,
           }));
+          const link = store.findLinkedTransaction(row.id);
           return {
             id: row.id,
             expense_date: row.expense_date,
@@ -212,6 +216,8 @@ export function registerExpensesRoutes(app: App, store: Store): void {
             status: row.status === "confirmed" ? ("confirmed" as const) : ("pending" as const),
             shared: row.user_id !== user.id,
             participants,
+            card: link?.card ?? null,
+            bank: link?.bank ?? null,
           };
         }),
       };

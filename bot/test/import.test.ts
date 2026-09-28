@@ -11,7 +11,8 @@ import { detectKind } from "../../shared/src/import/detect.ts";
 import { formatFingerprint } from "../../shared/src/import/fingerprint.ts";
 import { applyProfile, checkIntegrity, parseDate, parseNumber } from "../../shared/src/import/profile.ts";
 import { chooseBand, rankCandidates } from "../../shared/src/import/reconcile.ts";
-import { importStatement, unlinkTransaction } from "../../shared/src/import/pipeline.ts";
+import { importStatement, unlinkTransaction, MAX_STATEMENT_BYTES } from "../../shared/src/import/pipeline.ts";
+import { readZip } from "../../shared/src/import/zip.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtures = path.join(here, "fixtures");
@@ -77,6 +78,15 @@ test("readXlsx reads inline-string cells", () => {
   assert.equal(grid[0][1], "Опис операції");
   assert.equal(grid[1][1], "MERCADONA ORRIOLS");
   assert.equal(grid[1][2], "-844.85");
+});
+
+test("readXlsx refuses a macro-enabled workbook", () => {
+  assert.throws(() => readXlsx(readFileSync(path.join(fixtures, "macro.xlsx"))), /macro/i);
+});
+
+test("readZip refuses an archive that expands past the limit", () => {
+  const bytes = readFileSync(path.join(fixtures, "privat-sample.xlsx"));
+  assert.throws(() => readZip(bytes, 10), /expands past/);
 });
 
 test("parseDelimited handles quotes, separators and newlines", () => {
@@ -408,6 +418,100 @@ test("rows from one statement never match each other", async () => {
   assert.equal(summary.created, 2);
   assert.equal(summary.linked, 0);
   assert.equal(asked, 0);
+  store.close();
+});
+
+test("pipeline refuses an oversized statement", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "stmt-"));
+  const file = path.join(dir, "big.csv");
+  writeFileSync(file, Buffer.alloc(MAX_STATEMENT_BYTES + 1));
+
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => {
+      throw new Error("should not be called");
+    },
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await assert.rejects(
+    importStatement(store, user, { filePath: file, baseCurrency: "EUR" }, deps),
+    /too large/,
+  );
+  store.close();
+});
+
+test("an uncertain match honors the decision and is not asked twice", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "stmt-"));
+  const file = path.join(dir, "decide.csv");
+  writeFileSync(
+    file,
+    ["Дата;Опис операції;Сума;Валюта", "25.09.2026 12:00:00;BOMBON BOSS; -5.95;EUR"].join("\n"),
+  );
+
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const existingId = store.appendExpense(
+    baseExpense({
+      user_id: user.id,
+      amount_minor: 595,
+      base_amount_minor: 595,
+      description: "OTHER SHOP",
+      expense_date: "2026-09-25",
+      paid_at: "2026-09-25T12:00:00",
+    }),
+  );
+  let asked = 0;
+  const deps = {
+    generateMapping: async () => ({
+      bank: "Test",
+      roles: { date: "Дата", description: "Опис операції", amount: "Сума", amount_currency: "Валюта" },
+      directives: { date_format: "DD.MM.YYYY HH:mm:ss", decimal: ".", thousands: "", sign: "signed" as const },
+    }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async (input: { ranked: Array<{ expense: { id: number } }> }) => {
+      asked++;
+      return { action: "merge" as const, expenseId: input.ranked[0].expense.id };
+    },
+  };
+
+  const first = await importStatement(store, user, { filePath: file, baseCurrency: "EUR" }, deps);
+  assert.equal(first.linked, 1);
+  assert.equal(first.created, 0);
+  assert.equal(asked, 1);
+  assert.ok(store.listParticipants(existingId).some((p) => p.role === "payer" && p.origin === "import"));
+
+  const second = await importStatement(store, user, { filePath: file, baseCurrency: "EUR" }, deps);
+  assert.equal(second.skipped, 1);
+  assert.equal(asked, 1);
+  store.close();
+});
+
+test("a linked expense exposes the card and bank", async () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => ({ bank: "PrivatBank", roles: CSV_ROLES, directives: CSV_DIRECTIVES }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await importStatement(store, user, { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" }, deps);
+
+  const page = store.listExpensesForUser(user.id, "2026-01-01", "2026-12-31", 10, 0);
+  const link = store.findLinkedTransaction(page.items[0].id);
+  assert.equal(link?.card, "5168 **** **** 6331");
+  assert.equal(link?.bank, "PrivatBank");
+  assert.ok(page.items[0].description.length > 0);
   store.close();
 });
 

@@ -23,7 +23,7 @@
 
 - [x] 4.1 Add content-based file kind detection that ignores a misleading extension; verify tests over a small committed CSV and XLSX fixture
 - [x] 4.2 Add a CSV reader with delimiter and encoding detection; verify tests over a semicolon and a comma fixture, including a non-UTF-8 file
-- [ ] 4.3 Add an XLSX reader that enforces a file size limit, rejects macro-enabled workbooks and never evaluates formulas; verify tests over a valid fixture, an oversized file and a macro-enabled file (reader implemented and exercised on a valid fixture; the oversized and macro-enabled tests are still to add)
+- [x] 4.3 Add an XLSX reader that enforces a file size limit, rejects macro-enabled workbooks and never evaluates formulas; verify tests over a valid fixture, an oversized file and a macro-enabled file
 - [x] 4.4 Route PDF and image statements through the model document path to a mapping and the same verification gate; verify a fixture PDF produces a mapping and that an unreadable file is refused
 - [x] 4.5 Apply a profile to parse rows into normalized transaction drafts, choosing the transaction-currency amount as authoritative and supporting signed, direction-column and separate debit and credit shapes; verify tests for each shape
 - [x] 4.6 Classify each row as outflow, inflow or transfer, including own-card transfers; verify tests that a purchase is an outflow and a salary credit and a self-transfer are not
@@ -45,10 +45,10 @@
 - [x] 6.3 Implement the bands: auto-link a high unique score, ask a middle score or several close candidates, create a new expense when none is plausible; verify tests for each branch
 - [x] 6.4 Implement automatic linking as one atomic write of the transaction link, the payer and confirmer participants and the event; verify a test that a failure writes nothing
 - [x] 6.5 Add the family boundary authorization on linking and refuse a link to a non-member's expense; verify a test that a cross-family link is refused and changes nothing
-- [ ] 6.6 Implement enrichment that attaches the transaction card and bank to the expense detail without overwriting user-entered values; verify a test that a user value is kept (card data is stored on the transaction; the explicit keep-the-user-value test is still to add)
+- [x] 6.6 Implement enrichment that attaches the transaction card and bank to the expense detail without overwriting user-entered values; verify a test that a user value is kept
 - [x] 6.7 Implement undo of a link that detaches the transaction, removes the participants the link added and returns the transaction to unmatched; verify a test that it can then be rematched
 - [x] 6.8 Make reconciliation skip resolved transactions so a re-import produces no second expense, link or prompt; verify a test that a second run is a no-op
-- [ ] 6.9 Implement the interactive CLI decision for an uncertain match with merge, create separate and ignore, persisting the choice; verify a scripted transcript that each choice is honored and not repeated (the CLI handler is implemented; a scripted transcript test is still to add)
+- [x] 6.9 Implement the interactive CLI decision for an uncertain match with merge, create separate and ignore, persisting the choice; verify a scripted transcript that each choice is honored and not repeated
 
 ## 7. Reporting
 
