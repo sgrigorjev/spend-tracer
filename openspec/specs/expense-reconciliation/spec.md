@@ -51,7 +51,7 @@ The system SHALL score each candidate by date proximity, description similarity 
 
 #### Scenario: No plausible match creates a new expense
 
-- **WHEN** no candidate reaches the lower bound and no candidate exists at the amount and date
+- **WHEN** no candidate reaches the lower bound, whether or not a weaker same-amount candidate exists at the date
 - **THEN** the system creates a new expense for the transaction without asking
 
 ### Requirement: Automatic linking
@@ -179,7 +179,7 @@ The system SHALL let the user undo a link, SHALL detach the transaction, SHALL r
 
 ### Requirement: Idempotent reconciliation
 
-A transaction that has been resolved by linking, by creating an expense, or by being ignored SHALL not be reconciled again, and a re-import of an overlapping statement SHALL not produce a second expense or a second prompt.
+A transaction that has been resolved by linking, by creating an expense, or by being ignored SHALL not be reconciled again while it stays resolved. Undoing a link returns the transaction to the unmatched state, after which it may be reconciled again. A re-import of an overlapping statement SHALL not produce a second expense or a second prompt.
 
 #### Scenario: Resolved transaction skipped
 

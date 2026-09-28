@@ -84,7 +84,7 @@ The system SHALL always show a viewer their own expenses, and SHALL show another
 
 ### Requirement: Shared expense participants
 
-The system SHALL let a reconciled expense carry participants from the owner's family, so a payment made with another member's card appears as one expense with the paying member recorded as a payer and the confirming member recorded as a confirmer.
+The system SHALL let a reconciled expense carry participants from the owner's family, so a payment made with another member's card appears as one expense with the paying member recorded as a payer and the confirming member recorded as a confirmer. A participant record is retained when that member leaves or is removed, so the expense history stays intact, while the removed member loses visibility as defined by Expense visibility.
 
 #### Scenario: Payment with another member's card
 
@@ -95,6 +95,11 @@ The system SHALL let a reconciled expense carry participants from the owner's fa
 
 - **WHEN** a participant is attached
 - **THEN** the participant is an active member of the owner's family
+
+#### Scenario: Membership revoked
+
+- **WHEN** a member who is a participant leaves or is removed from the family
+- **THEN** the participant record is retained so the expense history is intact, and the removed member loses visibility of the expense
 
 ### Requirement: Dashboard scope
 

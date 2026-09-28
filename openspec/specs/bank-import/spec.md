@@ -56,7 +56,7 @@ When no profile resolves, the system SHALL derive a declarative mapping with the
 #### Scenario: Roles cover the statement
 
 - **WHEN** a mapping is generated
-- **THEN** it identifies at least the date, amount and currency roles and any description, category, balance, card and direction roles the file provides
+- **THEN** it identifies at least the date and amount roles, plus any currency, description, category, balance, card and direction roles the file provides
 
 #### Scenario: No executable content
 
@@ -126,7 +126,7 @@ The system SHALL scope every import profile to the user who created it, SHALL ne
 
 ### Requirement: Amount, currency and direction mapping
 
-The system SHALL allow a profile to identify one or more amount columns together with their currencies, and SHALL treat the transaction-currency amount as authoritative when both a transaction-currency and an account-currency amount are present. It SHALL allow the outflow direction to be expressed as a signed amount, a direction column, or separate debit and credit columns.
+The system SHALL allow a profile to identify one or more amount columns together with their currencies, and SHALL treat the transaction-currency amount as authoritative when both a transaction-currency and an account-currency amount are present, unless the profile directs it to use the account-currency amount instead. It SHALL allow the outflow direction to be expressed as a signed amount, a direction column, or separate debit and credit columns.
 
 #### Scenario: Both amounts present
 
@@ -164,7 +164,7 @@ The system SHALL classify each parsed row as an outflow, an inflow or a transfer
 
 ### Requirement: Transaction persistence and idempotency
 
-The system SHALL store each statement and its rows immutably, SHALL compute a stable fingerprint for each row from its account, date, amount, currency, description and running balance, and SHALL not create a second transaction for a row whose fingerprint the user already has.
+The system SHALL store each statement and its rows immutably, SHALL compute a stable fingerprint for each row from its account, date, amount, currency, description and running balance, and SHALL not create a second transaction for a row whose fingerprint the user already has. When a row carries no running balance, the fingerprint falls back to the row's position in the statement, so two otherwise identical rows in one statement stay distinct; when a running balance is present the position is excluded.
 
 #### Scenario: Rows stored
 
@@ -178,11 +178,11 @@ The system SHALL store each statement and its rows immutably, SHALL compute a st
 
 ### Requirement: Parse integrity
 
-The system SHALL refuse an import when the parsed rows cannot be reconciled with the statement's own totals or balance sequence, so a partially parsed file is never accepted without notice.
+The system SHALL refuse an import when the parsed rows cannot be reconciled with the statement's balance sequence, so a partially parsed file is never accepted without notice. A statement without a balance column is verified through the row invariants alone; stated totals are not reconciled.
 
-#### Scenario: Totals mismatch refused
+#### Scenario: Balance mismatch refused
 
-- **WHEN** the sum of the parsed rows does not agree with the statement's stated totals or balance sequence
+- **WHEN** the balance sequence does not reconcile with the parsed row amounts
 - **THEN** the system reports the mismatch and stores nothing
 
 #### Scenario: Nothing written on refusal

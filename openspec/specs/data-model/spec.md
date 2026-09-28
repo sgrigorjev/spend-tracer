@@ -254,7 +254,7 @@ The system SHALL store each imported statement once, with the importing user, th
 
 ### Requirement: Imported transaction storage
 
-The system SHALL store every parsed statement row immutably with its account, date, amount and currency, the account-currency amount where it differs, description, category, running balance, direction and its fingerprint, together with the expense it resolved to when one exists.
+The system SHALL store every parsed statement row with its account, date, amount and currency, the account-currency amount where it differs, description, category, running balance, direction and its fingerprint, and SHALL keep those parsed source fields immutable. The resolution state and the expense the row resolved to when one exists are stored alongside and may change as reconciliation resolves the row.
 
 #### Scenario: Row stored with its fingerprint
 
