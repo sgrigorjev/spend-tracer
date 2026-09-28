@@ -7,6 +7,7 @@
     "start": "node src/index.ts",
     "dev": "node --watch src/index.ts",
     "test": "node --test \"test/*.test.ts\"",
+    "import": "node src/cli/import.ts",
     "generate:voices": "node test/scripts/generate-voices.ts",
     "generate:receipts": "node test/scripts/generate-receipts.ts",
     "typecheck": "tsc --noEmit"

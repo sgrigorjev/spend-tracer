@@ -3,58 +3,20 @@ import { Context, Markup, Telegraf } from "telegraf";
 import { extractExpense, type MessageMeta } from "./openai.ts";
 import type { ExpenseRecord } from "./expenseSchema.ts";
 import type { ExpenseInsert, ExpenseSource, ExpenseUpdate, Store, UserRow } from "./db.ts";
-import { getRate } from "../../shared/src/fx.ts";
-import { paidAtPrecision, resolveExpenseDate } from "../../shared/src/dates.ts";
-import { fromMinor, toMinor } from "../../shared/src/money.ts";
+import { buildExpenseInsert } from "../../shared/src/expenseInput.ts";
+import { fromMinor } from "../../shared/src/money.ts";
 import { config } from "./config.ts";
 import { logger } from "./logger.ts";
 
-/**
- * Build an expense row from an LLM record. The row is attributed to the user
- * who sent the message, the amount is stored in minor units, and the local
- * calendar day and the base-currency equivalent are computed here.
- */
-export async function recordToExpense(
+/** Build an expense row from an LLM record, through the shared normalizer. */
+export function recordToExpense(
   store: Store,
   record: ExpenseRecord,
   user: UserRow,
   createdAtIso: string,
   source: ExpenseSource,
 ): Promise<ExpenseInsert> {
-  const currency = record.currency ? record.currency.toUpperCase() : null;
-  const amountMinor = record.amount != null && currency ? toMinor(record.amount, currency) : null;
-  const paidAt = record.paid_at ?? null;
-  const expenseDate = resolveExpenseDate(paidAt, createdAtIso, user.display_timezone);
-
-  let baseAmountMinor: number | null = null;
-  let fxRate: number | null = null;
-  let fxRateDate: string | null = null;
-  if (record.amount != null && currency) {
-    const rate = await getRate(store, currency, config.baseCurrency, expenseDate);
-    if (rate) {
-      baseAmountMinor = toMinor(record.amount * rate.rate, config.baseCurrency);
-      fxRate = rate.rate;
-      fxRateDate = rate.date;
-    }
-  }
-
-  return {
-    user_id: user.id,
-    amount_minor: amountMinor,
-    currency,
-    base_amount_minor: baseAmountMinor,
-    base_currency: config.baseCurrency,
-    fx_rate: fxRate,
-    fx_rate_date: fxRateDate,
-    category: record.category,
-    description: record.description,
-    paid_at: paidAt,
-    paid_at_precision: paidAt ? paidAtPrecision(paidAt) : "minute",
-    expense_date: expenseDate,
-    source,
-    confidence: record.confidence,
-    status: "pending",
-  };
+  return buildExpenseInsert(store, record, user, createdAtIso, source, config.baseCurrency);
 }
 
 interface PendingEntry {

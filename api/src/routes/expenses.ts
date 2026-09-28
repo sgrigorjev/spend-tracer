@@ -55,6 +55,12 @@ const summarySchema = z.object({
   projectedTotal: z.number().nullable(),
 });
 
+const participantSchema = z.object({
+  userId: z.number(),
+  role: z.enum(["recorder", "payer", "confirmer"]),
+  origin: z.enum(["bot", "import", "manual"]),
+});
+
 const listSchema = z.object({
   currency: z.string(),
   period: periodSchema,
@@ -68,6 +74,11 @@ const listSchema = z.object({
       amount: z.number().nullable(),
       currency: z.string(),
       status: z.enum(["confirmed", "pending"]),
+      shared: z.boolean(),
+      participants: z.array(participantSchema),
+      // Card and bank from the statement, when an import confirmed the expense.
+      card: z.string().nullable(),
+      bank: z.string().nullable(),
     }),
   ),
 });
@@ -102,8 +113,8 @@ function fillDays(range: DateRange, rows: DailySpendRow[]): DailySpendRow[] {
 }
 
 function buildSummary(store: Store, userId: number, ranges: PeriodRanges, currency: string, rate: number) {
-  const summary = store.expenseSummary(userId, ranges.period.from, ranges.period.to);
-  const previous = store.expenseSummary(userId, ranges.comparison.from, ranges.comparison.to);
+  const summary = store.expenseSummaryForUser(userId, ranges.period.from, ranges.period.to);
+  const previous = store.expenseSummaryForUser(userId, ranges.comparison.from, ranges.comparison.to);
 
   const avgPerDayMinor = Math.round(summary.confirmed_total_minor / countDays(ranges.period));
   const prevAvgPerDayMinor = Math.round(previous.confirmed_total_minor / countDays(ranges.comparison));
@@ -115,7 +126,7 @@ function buildSummary(store: Store, userId: number, ranges: PeriodRanges, curren
   }));
 
   const weekdayTotals = new Map<number, number>();
-  for (const row of store.spendByWeekday(userId, ranges.comparison.from, ranges.comparison.to)) {
+  for (const row of store.spendByWeekdayForUser(userId, ranges.comparison.from, ranges.comparison.to)) {
     weekdayTotals.set(row.weekday, row.total_minor);
   }
   const projection = buildProjection(
@@ -177,7 +188,7 @@ export function registerExpensesRoutes(app: App, store: Store): void {
       const anchor = request.query.date ?? todayInTimeZone(user.display_timezone);
       const ranges = resolvePeriod(request.query.preset, anchor);
       const { currency, rate } = await resolveRate(store, user, anchor);
-      const page = store.listExpenses(
+      const page = store.listExpensesForUser(
         user.id,
         ranges.period.from,
         ranges.period.to,
@@ -188,15 +199,27 @@ export function registerExpensesRoutes(app: App, store: Store): void {
         currency,
         period: { preset: ranges.preset, from: ranges.period.from, to: ranges.period.to, end: ranges.end },
         total: page.total,
-        items: page.items.map((row) => ({
-          id: row.id,
-          expense_date: row.expense_date,
-          description: row.description,
-          category: row.category ?? "other",
-          amount: row.base_amount_minor === null ? null : toAmount(row.base_amount_minor, rate, currency),
-          currency,
-          status: row.status === "confirmed" ? ("confirmed" as const) : ("pending" as const),
-        })),
+        items: page.items.map((row) => {
+          const participants = store.listParticipants(row.id).map((p) => ({
+            userId: p.user_id,
+            role: p.role,
+            origin: p.origin,
+          }));
+          const link = store.findLinkedTransaction(row.id);
+          return {
+            id: row.id,
+            expense_date: row.expense_date,
+            description: row.description,
+            category: row.category ?? "other",
+            amount: row.base_amount_minor === null ? null : toAmount(row.base_amount_minor, rate, currency),
+            currency,
+            status: row.status === "confirmed" ? ("confirmed" as const) : ("pending" as const),
+            shared: row.user_id !== user.id,
+            participants,
+            card: link?.card ?? null,
+            bank: link?.bank ?? null,
+          };
+        }),
       };
     },
   );

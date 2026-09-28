@@ -1,17 +1,6 @@
-/** Expense categories the model may pick from. */
-export const CATEGORIES = [
-  "groceries",
-  "transport",
-  "housing",
-  "utilities",
-  "dining",
-  "entertainment",
-  "health",
-  "clothing",
-  "other",
-] as const;
+import { CATEGORIES, type Category } from "../../shared/src/categories.ts";
 
-export type Category = (typeof CATEGORIES)[number];
+export { CATEGORIES, type Category };
 
 /** What each category covers, fed to the model so it classifies consistently. */
 const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
