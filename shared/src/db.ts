@@ -321,6 +321,7 @@ export interface Store {
   updateUserSettings(userId: number, fields: UserSettingsUpdate): void;
   // expenses
   appendExpense(row: ExpenseInsert): number;
+  findExpenseById(id: number): ExpenseRow | undefined;
   setExpenseStatus(id: number, status: ExpenseStatus): void;
   updateExpense(id: number, fields: Partial<ExpenseUpdate>): void;
   expenseSummary(userId: number, from: string, to: string): ExpenseSummary;
@@ -626,6 +627,7 @@ export function createStore(dbPath: string): Store {
                           status, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  const selectExpenseById = db.prepare("SELECT * FROM expenses WHERE id = ?");
   const updateStatus = db.prepare("UPDATE expenses SET status = ?, updated_at = ? WHERE id = ?");
 
   const selectSummaryTotals = db.prepare(`
@@ -958,6 +960,9 @@ export function createStore(dbPath: string): Store {
         insertEvent.run(id, "created", null, null, row.user_id, now);
         return id;
       });
+    },
+    findExpenseById(id) {
+      return selectExpenseById.get(id) as unknown as ExpenseRow | undefined;
     },
     setExpenseStatus(id, status) {
       updateStatus.run(status, nowIso(), id);

@@ -91,8 +91,18 @@ function minMaxDate(drafts: TransactionDraft[]): { from: string | null; to: stri
   return { from: dates[0], to: dates[dates.length - 1] };
 }
 
+/** Refuse to touch an expense that is not the importer's or their family's. */
+function assertLinkAllowed(store: Store, importer: UserRow, expenseId: number): void {
+  const expense = store.findExpenseById(expenseId);
+  if (!expense) throw new Error("expense not found");
+  if (!store.visibleUserIds(importer.id).includes(expense.user_id)) {
+    throw new Error("refusing to link an expense outside the family");
+  }
+}
+
 /** Attach an existing expense to a transaction, recording who took part. */
 function linkTransaction(store: Store, importer: UserRow, transactionId: number, expenseId: number): void {
+  assertLinkAllowed(store, importer, expenseId);
   store.transaction(() => {
     store.addParticipant({ expense_id: expenseId, user_id: importer.id, role: "payer", origin: "import", confidence: 1 });
     store.addParticipant({
@@ -115,6 +125,9 @@ function linkTransaction(store: Store, importer: UserRow, transactionId: number,
 
 /** Undo a link, detaching the transaction and removing the participants it added. */
 export function unlinkTransaction(store: Store, userId: number, transactionId: number, expenseId: number): void {
+  const importer = store.findUserById(userId);
+  if (!importer) throw new Error("user not found");
+  assertLinkAllowed(store, importer, expenseId);
   store.transaction(() => {
     store.removeParticipant(expenseId, userId, "payer", "import");
     store.removeParticipant(expenseId, userId, "confirmer", "import");

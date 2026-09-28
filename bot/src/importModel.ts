@@ -191,7 +191,7 @@ export async function extractDocument({
       currency: draft.currency,
       description: draft.description,
       balanceMinor: draft.balance_minor,
-      sequence: index,
+      sequence: draft.balance_minor === null ? index : null,
     });
     return draft;
   });

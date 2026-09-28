@@ -124,6 +124,14 @@ test("applyProfile normalizes amounts, direction and transfers", () => {
   assert.equal(salary.direction, "inflow");
 });
 
+test("row fingerprint ignores position when a balance identifies the row", () => {
+  const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
+  const shifted = [["Історія операцій"], ...grid];
+  const original = applyProfile(grid, { roles: CSV_ROLES, directives: CSV_DIRECTIVES });
+  const moved = applyProfile(shifted, { roles: CSV_ROLES, directives: { ...CSV_DIRECTIVES, header_row: 2 } });
+  assert.equal(original[0].fingerprint, moved[0].fingerprint);
+});
+
 test("checkIntegrity accepts a consistent balance sequence", () => {
   const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
   const drafts = applyProfile(grid, { roles: CSV_ROLES, directives: CSV_DIRECTIVES });
@@ -262,6 +270,64 @@ test("reconciliation scores an exact same-day expense as a high match", () => {
   const ranked = rankCandidates({ expense_date: "2026-09-26", description: "MERCADONA ORRIOLS" }, [expense]);
   assert.equal(chooseBand(ranked), "high");
   assert.equal(ranked[0].expense.id, id);
+  store.close();
+});
+
+test("a debit/credit-only profile parses through the fallback", () => {
+  const grid = [
+    ["Date", "Debit", "Credit", "Desc"],
+    ["2026-09-26", "10.00", "", "Shop"],
+    ["2026-09-27", "", "25.00", "Salary"],
+  ];
+  const drafts = applyProfile(grid, {
+    roles: { date: "Date", debit: "Debit", credit: "Credit", description: "Desc" },
+    directives: { sign: "separate_columns" },
+  });
+  assert.equal(drafts[0].direction, "outflow");
+  assert.equal(drafts[0].amount_minor, -1000);
+  assert.equal(drafts[1].direction, "inflow");
+  assert.equal(drafts[1].amount_minor, 2500);
+});
+
+test("an impossible calendar date is rejected", () => {
+  assert.equal(parseDate("30.02.2026", "DD.MM.YYYY"), null);
+  assert.equal(parseDate("2026-13-01"), null);
+});
+
+test("candidate lookup never returns an outside-family expense", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  store.appendExpense(baseExpense({ user_id: a.id }));
+
+  const withoutFamily = store.findMatchCandidates([b.id], 1639, "EUR", "2026-09-25", "2026-09-27");
+  assert.equal(withoutFamily.length, 0);
+
+  const family = store.createFamily(a.id, "Home");
+  assert.equal(family.ok, true);
+  store.inviteByEmail(family.ok ? (family.familyId ?? 0) : 0, a.id, "b@x.com");
+  if (family.ok) store.acceptInvitation(b.id, family.familyId ?? 0);
+  const withFamily = store.findMatchCandidates(store.visibleUserIds(b.id), 1639, "EUR", "2026-09-25", "2026-09-27");
+  assert.equal(withFamily.length, 1);
+  store.close();
+});
+
+test("unlink refuses an expense outside the importer's family", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  const expenseId = store.appendExpense(baseExpense({ user_id: a.id }));
+  assert.throws(() => unlinkTransaction(store, b.id, 1, expenseId));
+  store.close();
+});
+
+test("a same-day different-merchant expense is a middle-band match", () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  store.appendExpense(baseExpense({ user_id: user.id, expense_date: "2026-09-26", description: "OTHER SHOP" }));
+  const expense = store.listExpenses(user.id, "2026-09-01", "2026-09-30", 10, 0).items[0];
+  const ranked = rankCandidates({ expense_date: "2026-09-26", description: "MERCADONA ORRIOLS" }, [expense]);
+  assert.equal(chooseBand(ranked), "middle");
   store.close();
 });
 

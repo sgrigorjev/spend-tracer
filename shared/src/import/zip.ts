@@ -33,6 +33,7 @@ export function readZip(buffer: Buffer, maxBytes = MAX_UNCOMPRESSED_BYTES): Map<
     }
     const method = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
     const nameLen = buffer.readUInt16LE(offset + 28);
     const extraLen = buffer.readUInt16LE(offset + 30);
     const commentLen = buffer.readUInt16LE(offset + 32);
@@ -41,9 +42,13 @@ export function readZip(buffer: Buffer, maxBytes = MAX_UNCOMPRESSED_BYTES): Map<
 
     const localNameLen = buffer.readUInt16LE(localOffset + 26);
     const localExtraLen = buffer.readUInt16LE(localOffset + 28);
+    // Reject from the header before inflating, and cap the inflate as well in
+    // case the header understates the real size. This is the zip-bomb guard.
+    if (total + uncompressedSize > maxBytes) throw new Error("zip archive expands past the allowed size");
     const dataStart = localOffset + 30 + localNameLen + localExtraLen;
     const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
-    const data = method === 0 ? Buffer.from(compressed) : inflateRawSync(compressed);
+    const data =
+      method === 0 ? Buffer.from(compressed) : inflateRawSync(compressed, { maxOutputLength: maxBytes - total });
     total += data.length;
     if (total > maxBytes) throw new Error("zip archive expands past the allowed size");
     entries.set(name, data);

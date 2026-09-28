@@ -77,6 +77,12 @@ export function validateMapping(raw: { roles?: unknown; directives?: unknown }):
     if (value === null || value === undefined) continue;
     const text = String(value);
     if (text.length > 64) throw new Error(`invalid directive: ${key}`);
+    if (key === "sign" && !["signed", "separate_columns", "direction_column"].includes(text)) {
+      throw new Error(`invalid sign directive: ${text}`);
+    }
+    if (key === "prefer" && !["transaction", "account"].includes(text)) {
+      throw new Error(`invalid prefer directive: ${text}`);
+    }
     (directives as Record<string, string>)[key] = text;
   }
   return { roles, directives };
@@ -163,11 +169,18 @@ function assemble(
   const y = Number(year);
   const mo = Number(month);
   const d = Number(day);
-  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
   const pad = (n: number) => String(n).padStart(2, "0");
+  // Round-trip through Date so an impossible calendar date (30 February) is
+  // rejected instead of stored and skewing grouping and the match window.
+  const check = new Date(Date.UTC(y, mo - 1, d));
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;
   const date = `${y}-${pad(mo)}-${pad(d)}`;
   if (hour == null || minute == null) return date;
-  return `${date}T${pad(Number(hour))}:${pad(Number(minute))}:${pad(Number(second ?? 0))}`;
+  const h = Number(hour);
+  const mi = Number(minute);
+  const s = Number(second ?? 0);
+  if (h > 23 || mi > 59 || s > 59) return null;
+  return `${date}T${pad(h)}:${pad(mi)}:${pad(s)}`;
 }
 
 /** Whether a cell looks like a date or a number rather than a label. */
@@ -251,9 +264,20 @@ export function applyProfile(
 
     let amount = txAmount;
     let currency = txCurrency;
+    if (directives.prefer === "account" && accAmount != null) {
+      amount = accAmount;
+      currency = accCurrency;
+    }
     if (amount == null) {
       amount = accAmount;
       currency = accCurrency;
+    }
+    if (amount == null) {
+      // Profiles that only have separate debit and credit columns.
+      const debit = parseNumber(cellFor(row, index, roles.debit), directives);
+      const credit = parseNumber(cellFor(row, index, roles.credit), directives);
+      if (debit != null && debit !== 0) amount = -Math.abs(debit);
+      else if (credit != null && credit !== 0) amount = Math.abs(credit);
     }
     if (amount == null) throw new Error(`row ${r + 1}: unparsable amount`);
 
@@ -290,7 +314,7 @@ export function applyProfile(
       currency: draft.currency,
       description: draft.description,
       balanceMinor: draft.balance_minor,
-      sequence: r,
+      sequence: draft.balance_minor === null ? r : null,
     });
     drafts.push(draft);
   }

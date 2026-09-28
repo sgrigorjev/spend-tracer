@@ -48,7 +48,9 @@ export function rowFingerprint(fields: {
   currency: string | null;
   description: string;
   balanceMinor: number | null;
-  sequence: number;
+  // The statement sequence is a fallback identity only used when there is no
+  // running balance, so overlapping imports stay idempotent with a balance.
+  sequence: number | null;
 }): string {
   return sha256(
     JSON.stringify([
