@@ -38,7 +38,10 @@ export interface ProfilePreview {
 /** What the user decided at the profile preview. */
 export interface ProfileConfirmation {
   confirmed: boolean;
-  /** A bank name to store, overriding the mapping's name when present. */
+  /**
+   * A bank name to store. Omitting the field keeps the mapping's name; setting
+   * it, including to null, overrides the mapping's name.
+   */
   bank?: string | null;
 }
 
@@ -276,7 +279,7 @@ export async function importStatement(
       // A user-supplied name overrides the mapping's, so the stored profile
       // matches the statement it produced.
       if (confirmation.bank !== undefined) {
-        const typed = confirmation.bank?.trim() || null;
+        const typed = confirmation.bank?.trim().slice(0, 120) || null;
         store.setProfileBank(user.id, fingerprint, typed);
         bank = typed;
       } else {
