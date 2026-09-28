@@ -66,5 +66,9 @@ export function parseMappingReply(raw: unknown): MappingResult {
   if (typeof raw !== "object" || raw === null) throw new Error("mapping reply is not an object");
   const record = raw as { bank?: unknown; roles?: unknown; directives?: unknown };
   const { roles, directives } = validateMapping(record);
-  return { bank: typeof record.bank === "string" ? record.bank : null, roles, directives };
+  // The model can write the text null where it means no bank; treat the same
+  // placeholders the role check does as absent.
+  const rawBank = typeof record.bank === "string" ? record.bank.trim() : "";
+  const bank = rawBank === "" || ["null", "none", "n/a"].includes(rawBank.toLowerCase()) ? null : rawBank;
+  return { bank, roles, directives };
 }
