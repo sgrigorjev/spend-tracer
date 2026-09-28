@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createStore, type ExpenseInsert, type ProfileDirectives, type ProfileRoleMap } from "../src/db.ts";
@@ -347,6 +348,44 @@ test("a same-day different-merchant expense is a middle-band match", () => {
   const expense = store.listExpenses(user.id, "2026-09-01", "2026-09-30", 10, 0).items[0];
   const ranked = rankCandidates({ expense_date: "2026-09-26", description: "MERCADONA ORRIOLS" }, [expense]);
   assert.equal(chooseBand(ranked), "middle");
+  store.close();
+});
+
+test("rows from one statement never match each other", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "stmt-"));
+  const file = path.join(dir, "repeat.csv");
+  writeFileSync(
+    file,
+    [
+      "Дата;Опис операції;Сума;Валюта",
+      "25.09.2026 12:00:00;BOMBON BOSS; -5.95;EUR",
+      "23.09.2026 12:00:00;BOMBON BOSS; -5.95;EUR",
+    ].join("\n"),
+  );
+
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  let asked = 0;
+  const deps = {
+    generateMapping: async () => ({
+      bank: "Test",
+      roles: { date: "Дата", description: "Опис операції", amount: "Сума", amount_currency: "Валюта" },
+      directives: { date_format: "DD.MM.YYYY HH:mm:ss", decimal: ".", thousands: "", sign: "signed" as const },
+    }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async () => {
+      asked++;
+      return { action: "separate" as const };
+    },
+  };
+
+  const summary = await importStatement(store, user, { filePath: file, baseCurrency: "EUR" }, deps);
+  assert.equal(summary.created, 2);
+  assert.equal(summary.linked, 0);
+  assert.equal(asked, 0);
   store.close();
 });
 

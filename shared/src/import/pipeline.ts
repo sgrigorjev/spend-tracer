@@ -320,6 +320,11 @@ export async function importStatement(
     asked: 0,
   };
 
+  // Expenses created from this statement must not become match candidates for
+  // its other rows: separate statement lines are separate purchases, even at
+  // the same merchant for the same amount.
+  const createdHere = new Set<number>();
+
   for (const { id: transactionId, draft } of stored) {
     if (draft.direction !== "outflow" || draft.amount_minor === null || !draft.currency) {
       store.setTransactionResolution(transactionId, { state: "ignored", expense_id: null });
@@ -328,13 +333,15 @@ export async function importStatement(
     }
 
     const memberIds = store.visibleUserIds(user.id);
-    const candidates = store.findMatchCandidates(
-      memberIds,
-      Math.abs(draft.amount_minor),
-      draft.currency,
-      shiftDate(draft.expense_date, -DATE_WINDOW_DAYS),
-      shiftDate(draft.expense_date, DATE_WINDOW_DAYS),
-    );
+    const candidates = store
+      .findMatchCandidates(
+        memberIds,
+        Math.abs(draft.amount_minor),
+        draft.currency,
+        shiftDate(draft.expense_date, -DATE_WINDOW_DAYS),
+        shiftDate(draft.expense_date, DATE_WINDOW_DAYS),
+      )
+      .filter((expense) => !createdHere.has(expense.id));
     const ranked = rankCandidates(draft, candidates);
     const band = chooseBand(ranked);
 
@@ -348,14 +355,14 @@ export async function importStatement(
         linkTransaction(store, user, transactionId, outcome.expenseId);
         summary.linked++;
       } else if (outcome.action === "separate") {
-        await createExpenseFromTransaction(store, user, transactionId, draft, options.baseCurrency);
+        createdHere.add(await createExpenseFromTransaction(store, user, transactionId, draft, options.baseCurrency));
         summary.created++;
       } else {
         store.setTransactionResolution(transactionId, { state: "ignored", expense_id: null });
         summary.ignored++;
       }
     } else {
-      await createExpenseFromTransaction(store, user, transactionId, draft, options.baseCurrency);
+      createdHere.add(await createExpenseFromTransaction(store, user, transactionId, draft, options.baseCurrency));
       summary.created++;
     }
   }
