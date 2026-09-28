@@ -263,6 +263,28 @@ test("attribution follows the confirmed payer, list shows a shared expense", () 
   store.close();
 });
 
+test("attribution with several confirmed payers is deterministic", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  const c = store.resolveUser({ email: "c@x.com", name: "C", avatar: null, provider: "g", subject: "c" });
+  const family = store.createFamily(a.id, "Home");
+  assert.equal(family.ok, true);
+  const familyId = family.ok ? (family.familyId ?? 0) : 0;
+  store.inviteByEmail(familyId, a.id, "b@x.com");
+  store.inviteByEmail(familyId, a.id, "c@x.com");
+  store.acceptInvitation(b.id, familyId);
+  store.acceptInvitation(c.id, familyId);
+
+  const expenseId = store.appendExpense(baseExpense({ user_id: a.id }));
+  store.addParticipant({ expense_id: expenseId, user_id: b.id, role: "payer", origin: "import", confidence: 1 });
+  store.addParticipant({ expense_id: expenseId, user_id: c.id, role: "payer", origin: "import", confidence: 1 });
+
+  assert.equal(store.expenseSummaryForUser(b.id, "2026-09-01", "2026-09-30").confirmed_total_minor, 1639);
+  assert.equal(store.expenseSummaryForUser(c.id, "2026-09-01", "2026-09-30").confirmed_total_minor, 0);
+  store.close();
+});
+
 test("reconciliation scores an exact same-day expense as a high match", () => {
   const store = createStore(":memory:");
   const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });

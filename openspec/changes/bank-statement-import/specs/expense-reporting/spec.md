@@ -35,6 +35,11 @@ The system SHALL attribute a shared expense by its confirmed payer, and SHALL fa
 - **WHEN** an expense has a confirmed payer
 - **THEN** the expense is attributed to that payer regardless of who recorded it
 
+#### Scenario: Several confirmed payers
+
+- **WHEN** an expense has more than one confirmed payer
+- **THEN** the earliest recorded confirmed payer is used for monetary attribution and the others stay participants
+
 #### Scenario: Recorder is the fallback
 
 - **WHEN** an expense has no confirmed payer

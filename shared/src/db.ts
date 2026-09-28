@@ -785,9 +785,12 @@ export function createStore(dbPath: string): Store {
    * A payer is confirmed when the origin is not the bot: the bot records an
    * assumed payer at capture time, while an import or a manual entry confirms.
    */
+  // ORDER BY id makes attribution deterministic when an expense has several
+  // confirmed payers: the earliest recorded one owns the monetary attribution,
+  // while every confirmed payer stays a participant.
   const ATTRIBUTED_USER =
     "COALESCE((SELECT p.user_id FROM expense_participants p " +
-    "WHERE p.expense_id = e.id AND p.role = 'payer' AND p.origin <> 'bot' LIMIT 1), e.user_id)";
+    "WHERE p.expense_id = e.id AND p.role = 'payer' AND p.origin <> 'bot' ORDER BY p.id LIMIT 1), e.user_id)";
 
   const selectScopedSummary = db.prepare(`
     SELECT
