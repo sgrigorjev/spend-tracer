@@ -79,7 +79,7 @@ export function readXlsx(bytes: Buffer): string[][] {
   const sheetName =
     [...entries.keys()].find((name) => name === "xl/worksheets/sheet1.xml") ??
     [...entries.keys()].sort().find((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name));
-  if (!sheetName) throw new Error("no worksheet found in workbook");
+  if (!sheetName) throw new Error("not an XLSX workbook: no worksheet found");
 
   const strings = entries.has("xl/sharedStrings.xml")
     ? sharedStrings(entries.get("xl/sharedStrings.xml")!.toString("utf8"))

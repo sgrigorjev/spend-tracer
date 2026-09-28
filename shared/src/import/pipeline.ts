@@ -9,7 +9,7 @@ import type {
 import { fromMinor } from "../money.ts";
 import { buildExpenseInsert } from "../expenseInput.ts";
 import { mapCategoryToKnown } from "../categories.ts";
-import { detectKind, type FileKind } from "./detect.ts";
+import { detectKind, isProbablyBinary, type FileKind } from "./detect.ts";
 import { readCsv } from "./csv.ts";
 import { readXlsx } from "./xlsx.ts";
 import { formatFingerprint } from "./fingerprint.ts";
@@ -203,6 +203,9 @@ export async function importStatement(
   if (bytes.length === 0) throw new Error("statement file is empty");
   if (bytes.length > MAX_STATEMENT_BYTES) throw new Error("statement file is too large");
   const kind = detectKind(bytes);
+  if (kind === "csv" && isProbablyBinary(bytes)) {
+    throw new Error("unsupported file format");
+  }
 
   let drafts: TransactionDraft[] = [];
   let bank: string | null = null;

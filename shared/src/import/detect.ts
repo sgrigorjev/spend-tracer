@@ -20,3 +20,11 @@ export function isImage(bytes: Buffer): boolean {
   const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   return png || jpeg;
 }
+
+/**
+ * A NUL byte in the first block marks a binary file. Such a file is not a CSV,
+ * so it is refused rather than decoded into garbage and sent to the model.
+ */
+export function isProbablyBinary(bytes: Buffer): boolean {
+  return bytes.subarray(0, 8192).includes(0);
+}

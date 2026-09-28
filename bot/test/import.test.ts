@@ -89,6 +89,34 @@ test("readZip refuses an archive that expands past the limit", () => {
   assert.throws(() => readZip(bytes, 10), /expands past/);
 });
 
+test("readXlsx refuses a zip that is not a workbook", () => {
+  assert.throws(() => readXlsx(readFileSync(path.join(fixtures, "not-xlsx.zip"))), /not an XLSX workbook/);
+});
+
+test("pipeline refuses a binary file before calling the model", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "stmt-"));
+  const file = path.join(dir, "clip.mp4");
+  writeFileSync(file, Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x00, 0x00]));
+
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => {
+      throw new Error("model must not be called");
+    },
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await assert.rejects(
+    importStatement(store, user, { filePath: file, baseCurrency: "EUR" }, deps),
+    /unsupported file format/,
+  );
+  store.close();
+});
+
 test("parseDelimited handles quotes, separators and newlines", () => {
   const grid = parseDelimited('a,b\n"x,1","line\n2"', ",");
   assert.deepEqual(grid, [
