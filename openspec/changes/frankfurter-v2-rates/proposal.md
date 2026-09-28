@@ -7,7 +7,6 @@ Imported expenses in UAH keep an empty base equivalent, so they are counted in t
 - Point the exchange-rate client at the Frankfurter v2 API, which covers UAH, instead of the v1 endpoint.
 - Keep the existing per-date cache and the nearest-earlier fallback, so the request volume does not change.
 - Add a one-off backfill for expense rows whose base equivalent is empty, so already imported UAH expenses are filled from the rate for their own date.
-- Ask the model to name the bank when it learns an import profile, so the bank field is populated instead of null.
 
 ## Capabilities
 
@@ -24,5 +23,6 @@ None.
 - `shared/src/fx.ts`: the Frankfurter endpoint, request shape and response parsing move to v2.
 - `shared/src/db.ts`: a read for expenses with an empty base equivalent.
 - `bot/src/cli/`: a backfill entry point that recomputes the missing base equivalents through the rate cache.
-- `shared/src/import/learn.ts`: the mapping prompt asks for the bank name.
 - `shared/src/fx.ts` tests and any test that stubs the Frankfurter response.
+
+The bank name is handled separately: an import will let the user set it, and a later change will add profile management in the settings UI.

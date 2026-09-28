@@ -58,8 +58,6 @@ Also return directives:
 - sign: "signed" when a signed amount gives direction, "separate_columns" when debit and credit are separate columns, or "direction_column" when a column names the direction. The sign is usually on the account_amount column.
 - prefer: "transaction" to use the transaction-currency amount for the expense, or "account" for the account-currency amount.
 
-Also return bank: the bank or institution name you can determine from the headers, the sample values or the file content, or null when it cannot be determined.
-
 Use only the header names shown. Do not invent columns or expressions. Write null (the JSON null), not the text "null", for a column the file does not have.`;
 }
 

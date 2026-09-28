@@ -42,10 +42,6 @@ The default v2 feed is blended across providers, which keeps one request shape a
 
 A new `bot/src/cli/backfill-rates.ts`, run with `npm run backfill:rates`, reads expenses whose `base_amount_minor` is null, resolves the rate for each expense date through `getRate`, and writes the base amount, currency, rate and rate date through the existing `updateExpense`. Reusing the store method and the same rate client means the backfill cannot diverge from the write path. Alternative: a SQL-only backfill, which would duplicate the conversion logic and lose the cache.
 
-### Bank name in the mapping prompt
-
-The mapping prompt asks the model for the bank name from the headers and sample and stores it on the profile. The strict schema already carries `bank`, so this is a prompt change, not a schema change. Existing profiles keep their stored value.
-
 ## Risks / Trade-offs
 
 - The v2 response shape differs from v1, so a wrong parse would silently return no rate. Mitigated by validating the parsed fields and a test with a stubbed v2 response and by keeping the source string in `exchange_rates`.
@@ -53,7 +49,6 @@ The mapping prompt asks the model for the bank name from the headers and sample 
 - A blended rate can differ slightly from an official one and from the bank's card rate. Acceptable for a base equivalent; the original amount and currency are untouched.
 - The public v2 instance is rate-limited to prevent abuse but has no quota. The cache keeps the call count per date, and the client already has a 5-second timeout and a nearest-earlier fallback.
 - The backfill writes to existing expense rows. Mitigated by only touching rows with an empty base, writing the four fields together, and reporting unresolved rows.
-- The bank name still depends on the model. Mitigated by the field staying nullable; a null bank degrades to the current behavior.
 
 ## Migration Plan
 

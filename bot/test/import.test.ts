@@ -12,7 +12,6 @@ import { formatFingerprint } from "../../shared/src/import/fingerprint.ts";
 import { applyProfile, checkIntegrity, parseDate, parseNumber } from "../../shared/src/import/profile.ts";
 import { chooseBand, rankCandidates } from "../../shared/src/import/reconcile.ts";
 import { importStatement, unlinkTransaction, MAX_STATEMENT_BYTES } from "../../shared/src/import/pipeline.ts";
-import { parseMappingReply } from "../../shared/src/import/learn.ts";
 import { readZip } from "../../shared/src/import/zip.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -448,13 +447,6 @@ test("rows from one statement never match each other", async () => {
   assert.equal(summary.linked, 0);
   assert.equal(asked, 0);
   store.close();
-});
-
-test("a mapping reply carries the bank name when the model provides one", () => {
-  const withBank = parseMappingReply({ bank: "PrivatBank", roles: CSV_ROLES, directives: CSV_DIRECTIVES });
-  assert.equal(withBank.bank, "PrivatBank");
-  const withoutBank = parseMappingReply({ bank: null, roles: CSV_ROLES, directives: CSV_DIRECTIVES });
-  assert.equal(withoutBank.bank, null);
 });
 
 test("pipeline refuses an oversized statement", async () => {

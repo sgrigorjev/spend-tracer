@@ -12,12 +12,8 @@
 - [x] 2.3 Run the backfill against the local database and confirm the 34 UAH expenses gain a base amount and no EUR expense changes; verify the count of empty base rows drops to zero
 - [x] 2.4 Re-check the dashboard after the backfill and confirm the September total rises to include the UAH spend and the previously empty amounts render with a value
 
-## 3. Bank name in the profile
+## 3. Verification
 
-- [x] 3.1 Update the mapping prompt in `shared/src/import/learn.ts` to ask for the bank name from the headers and sample; verify a test that a reply carrying a bank stores it on the profile and a reply without one stores null
-
-## 4. Verification
-
-- [x] 4.1 Run `npm run typecheck` in `shared/`, `bot/` and `api/`; verify all are clean
-- [x] 4.2 Run the shared, bot and API test suites; verify they pass
-- [x] 4.3 Confirm no code still references the deprecated `api.frankfurter.app` v1 endpoint; verify a search finds none
+- [x] 3.1 Run `npm run typecheck` in `shared/`, `bot/` and `api/`; verify all are clean
+- [x] 3.2 Run the shared, bot and API test suites; verify they pass
+- [x] 3.3 Confirm no code still references the deprecated `api.frankfurter.app` v1 endpoint; verify a search finds none
