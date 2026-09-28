@@ -453,6 +453,9 @@ test("rows from one statement never match each other", async () => {
 test("a placeholder bank in the mapping becomes no bank", () => {
   const reply = (bank: unknown) => parseMappingReply({ bank, roles: CSV_ROLES, directives: CSV_DIRECTIVES });
   assert.equal(reply("null").bank, null);
+  assert.equal(reply("Null").bank, null);
+  assert.equal(reply("none").bank, null);
+  assert.equal(reply("N/A").bank, null);
   assert.equal(reply("  ").bank, null);
   assert.equal(reply(null).bank, null);
   assert.equal(reply("PrivatBank").bank, "PrivatBank");
