@@ -35,3 +35,7 @@ Independent review of the branch against `main` before the PR, run with the revi
 ## Verdict after fixes
 
 No correctness bugs found in the rate client or the backfill. The three low findings worth acting on are applied; the rest are declined with a reason or confirmed as intended.
+
+## CodeRabbit round 1
+
+One finding, applied. The backfill wrote the base fields with an unconditional `updateExpense` by id, so an expense edited while the rate was being fetched (or already filled elsewhere) could be overwritten. The backfill now calls `backfillExpenseBase`, which updates only when the row is unchanged since it was read and still has no base amount, and counts the row as filled only when that update applies. Covered by a new test that a changed row is left untouched.

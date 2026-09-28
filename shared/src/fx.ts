@@ -91,13 +91,18 @@ export async function backfillMissingRates(
       continue;
     }
     const amount = fromMinor(row.amount_minor, row.currency);
-    store.updateExpense(row.id, {
-      base_amount_minor: toMinor(amount * rate.rate, baseCurrency),
-      base_currency: baseCurrency,
-      fx_rate: rate.rate,
-      fx_rate_date: rate.date,
-    });
-    result.filled++;
+    const applied = store.backfillExpenseBase(
+      row.id,
+      { amount_minor: row.amount_minor, currency: row.currency, expense_date: row.expense_date },
+      {
+        base_amount_minor: toMinor(amount * rate.rate, baseCurrency),
+        base_currency: baseCurrency,
+        fx_rate: rate.rate,
+        fx_rate_date: rate.date,
+      },
+    );
+    if (applied) result.filled++;
+    else result.unresolved++;
   }
   return result;
 }

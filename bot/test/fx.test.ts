@@ -183,3 +183,39 @@ test("backfill fills an empty base and leaves a filled row alone", async () => {
   assert.equal(byId.get(filled)!.base_amount_minor, 500);
   store.close();
 });
+
+test("the conditional backfill leaves a row that changed since it was read", async () => {
+  const store = createStore(":memory:");
+  const user = newUser(store);
+  const id = store.appendExpense({
+    user_id: user.id,
+    amount_minor: 1000,
+    currency: "USD",
+    base_amount_minor: null,
+    base_currency: "EUR",
+    fx_rate: null,
+    fx_rate_date: null,
+    category: "other",
+    description: "US purchase",
+    paid_at: "2026-09-01",
+    paid_at_precision: "date",
+    expense_date: "2026-09-01",
+    source: "import",
+    confidence: 1,
+    status: "confirmed",
+  });
+  const base = { base_amount_minor: 900, base_currency: "EUR", fx_rate: 0.9, fx_rate_date: "2026-09-01" };
+
+  assert.equal(
+    store.backfillExpenseBase(id, { amount_minor: 999, currency: "USD", expense_date: "2026-09-01" }, base),
+    false,
+  );
+  assert.equal(store.findExpenseById(id)!.base_amount_minor, null);
+
+  assert.equal(
+    store.backfillExpenseBase(id, { amount_minor: 1000, currency: "USD", expense_date: "2026-09-01" }, base),
+    true,
+  );
+  assert.equal(store.findExpenseById(id)!.base_amount_minor, 900);
+  store.close();
+});
