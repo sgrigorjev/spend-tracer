@@ -140,12 +140,15 @@ export function TelegramSettings() {
   // Poll the link status while the panel is open and the token is still valid.
   useEffect(() => {
     if (!pending || expired) return;
+    let cancelled = false;
     const id = window.setInterval(async () => {
       try {
         const res = await fetch("/api/telegram/link/status");
         if (!res.ok) return;
         const data = (await res.json()) as { linked: boolean };
-        if (data.linked) {
+        // Ignore a result that lands after this polling run was torn down, so a
+        // slow poll cannot restore the linked view after the user unlinks.
+        if (!cancelled && data.linked) {
           setPending(null);
           setAccount("linked");
         }
@@ -153,7 +156,10 @@ export function TelegramSettings() {
         // A failed poll is not fatal; the next tick retries.
       }
     }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
   }, [pending, expired]);
 
   const remaining = pending ? Math.max(0, Math.ceil((pending.expiresAt - now) / 1000)) : 0;
