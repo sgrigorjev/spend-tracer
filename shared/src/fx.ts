@@ -23,7 +23,7 @@ export async function getRate(
   date: string,
   fetchImpl: Fetcher = (url) => fetch(url, { signal: AbortSignal.timeout(5000) }),
 ): Promise<RateLookup | null> {
-  if (base === quote) return { rate: 1, date, source: "identity" };
+  if (base.toUpperCase() === quote.toUpperCase()) return { rate: 1, date, source: "identity" };
 
   const cached = store.getRateForDate(base, quote, date);
   if (cached) return cached;
@@ -52,8 +52,9 @@ async function fetchFrankfurter(
     const url = `https://api.frankfurter.dev/v2/rate/${base.toLowerCase()}/${quote.toLowerCase()}?date=${date}`;
     const response = await fetchImpl(url);
     if (!response.ok) return null;
-    const body = (await response.json()) as { date?: string; rate?: number };
-    if (typeof body.rate !== "number" || !Number.isFinite(body.rate) || !body.date) return null;
+    const body = (await response.json()) as { date?: unknown; rate?: unknown };
+    if (typeof body.rate !== "number" || !Number.isFinite(body.rate) || body.rate <= 0) return null;
+    if (typeof body.date !== "string" || body.date === "") return null;
     return { rate: body.rate, date: body.date, source: "frankfurter-v2" };
   } catch {
     return null;
@@ -69,8 +70,8 @@ export interface BackfillResult {
 
 /**
  * Fill the base equivalent of expenses whose base amount is empty, using the
- * rate for each expense's own date. A row that already has a base amount, or
- * whose amount or currency is missing, is left alone and reported unresolved.
+ * rate for each expense's own date. A row whose amount or currency is missing,
+ * or whose rate cannot be resolved, is left alone and reported unresolved.
  */
 export async function backfillMissingRates(
   store: Store,

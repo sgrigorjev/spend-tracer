@@ -127,6 +127,9 @@ test("a malformed v2 response yields no rate", async () => {
 
   const missingRate = stubFetcher({ date: "2026-09-26" });
   assert.equal(await getRate(store, "EUR", "UAH", "2026-09-27", missingRate.fn), null);
+
+  const zeroRate = stubFetcher({ date: "2026-09-26", rate: 0 });
+  assert.equal(await getRate(store, "EUR", "UAH", "2026-09-28", zeroRate.fn), null);
   store.close();
 });
 
