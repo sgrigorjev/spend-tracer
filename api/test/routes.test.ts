@@ -63,6 +63,7 @@ test("telegram and family endpoints reject unauthenticated requests", async () =
   const routes: Array<[string, string]> = [
     ["POST", "/api/telegram/link"],
     ["GET", "/api/telegram/link/status"],
+    ["DELETE", "/api/telegram/link"],
     ["POST", "/api/family"],
     ["GET", "/api/family/scope"],
     ["GET", "/api/settings"],
@@ -71,7 +72,7 @@ test("telegram and family endpoints reject unauthenticated requests", async () =
     ["GET", "/api/expenses"],
   ];
   for (const [method, url] of routes) {
-    const res = await app.inject({ method: method as "GET" | "POST" | "PATCH", url });
+    const res = await app.inject({ method: method as "GET" | "POST" | "PATCH" | "DELETE", url });
     assert.equal(res.statusCode, 401, `${method} ${url} should be 401`);
     assert.equal((res.json() as { code: string }).code, "unauthorized", `${method} ${url} should carry the code`);
   }
@@ -99,6 +100,33 @@ test("an authenticated user can request a link token and see the status", async 
   const status = await app.inject({ method: "GET", url: "/api/telegram/link/status", headers: { "x-test-user": String(userId) } });
   assert.equal(status.statusCode, 200);
   assert.deepEqual(status.json(), { linked: false, telegramUserId: null });
+
+  await app.close();
+  store.close();
+});
+
+test("an authenticated user can unlink their Telegram account", async () => {
+  const { app, store } = await buildTestApp();
+  const userId = store.resolveUser({
+    email: "a@example.com",
+    name: "A",
+    avatar: null,
+    provider: "google",
+    subject: "sub-a",
+  }).id;
+  const headers = { "x-test-user": String(userId) };
+
+  // Bind a Telegram account directly, then remove it through the API.
+  const { token } = store.createLinkToken(userId, 600);
+  assert.ok(store.redeemLinkToken(token, 111).ok);
+
+  const unlink = await app.inject({ method: "DELETE", url: "/api/telegram/link", headers });
+  assert.equal(unlink.statusCode, 200);
+  assert.deepEqual(unlink.json(), { linked: false, telegramUserId: null });
+
+  const status = await app.inject({ method: "GET", url: "/api/telegram/link/status", headers });
+  assert.deepEqual(status.json(), { linked: false, telegramUserId: null });
+  assert.equal(store.findUserByTelegramId(111), undefined);
 
   await app.close();
   store.close();

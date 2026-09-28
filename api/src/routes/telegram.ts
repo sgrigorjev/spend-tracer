@@ -48,4 +48,23 @@ export function registerTelegramRoutes(app: App, store: Store): void {
       return { linked: user.telegram_user_id != null, telegramUserId: user.telegram_user_id };
     },
   );
+
+  // Remove the signed-in user's Telegram link and any pending link token.
+  app.delete(
+    "/api/telegram/link",
+    {
+      preValidation: requireUser(store),
+      schema: {
+        response: {
+          200: z.object({ linked: z.boolean(), telegramUserId: z.number().nullable() }),
+          ...errorResponses,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user!;
+      store.unlinkTelegram(user.id);
+      return { linked: false, telegramUserId: null };
+    },
+  );
 }
