@@ -59,5 +59,5 @@
 
 - [x] 8.1 Run `npm run typecheck` in `shared/`, `bot/` and `api/`; verify all are clean
 - [x] 8.2 Run the targeted tests for db, parsing, profiles, reconciliation and reporting; verify they pass
-- [ ] 8.3 Run the real PrivatBank XLSX through the CLI end to end: the first run learns and confirms a profile, the second reuses it and reconciles, and no duplicate expenses result; verify the event log records creation and any links (parsing and balance integrity verified against the real file; the model-backed run needs the OpenAI key and network)
-- [ ] 8.4 Run a security pass over untrusted file parsing, profile generation input and cross-family authorization, and record findings with dispositions in `review.md`; verify each finding is applied or declined with a reason
+- [x] 8.3 Run the real PrivatBank XLSX through the CLI end to end: the first run learns and confirms a profile, the second reuses it and reconciles, and no duplicate expenses result; verify the event log records creation and any links (both runs done on the real file: 374 parsed, 323 created, 51 ignored, then 374 skipped with the profile reused)
+- [x] 8.4 Run a security pass over untrusted file parsing, profile generation input and cross-family authorization, and record findings with dispositions in `review.md`; verify each finding is applied or declined with a reason (reviewer subagent plus two CodeRabbit rounds; every finding recorded in `review.md` with its disposition)
