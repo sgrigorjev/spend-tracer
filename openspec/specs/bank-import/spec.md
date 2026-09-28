@@ -89,7 +89,7 @@ Before a generated profile can be reused, the system SHALL apply it and verify t
 
 ### Requirement: Profile confirmation
 
-The system SHALL present a draft profile with a preview of the parsed rows and the invariant results, SHALL apply the profile to later files only after the user confirms it, and SHALL mark it verified on confirmation.
+The system SHALL present a draft profile with a preview of the parsed rows and the invariant results, SHALL apply the profile to later files only after the user confirms it, SHALL let the user set the bank name for the profile at confirmation, and SHALL mark it verified on confirmation. A user-supplied bank name SHALL override any name carried by the generated mapping.
 
 #### Scenario: Draft not applied before confirmation
 
@@ -104,6 +104,16 @@ The system SHALL present a draft profile with a preview of the parsed rows and t
 #### Scenario: Confirmed and rejected
 
 - **WHEN** the user confirms the preview the profile becomes verified, and when the user rejects it the profile is discarded
+
+#### Scenario: Bank name set by the user
+
+- **WHEN** the user enters a bank name while confirming a draft profile
+- **THEN** the profile stores that bank name and the statement created by the import records it
+
+#### Scenario: Bank name left unchanged
+
+- **WHEN** the user confirms a draft profile without entering a bank name
+- **THEN** the profile keeps the bank name carried by the generated mapping, which may be null
 
 ### Requirement: Profile reuse and scope
 
@@ -189,3 +199,17 @@ The system SHALL refuse an import when the parsed rows cannot be reconciled with
 
 - **WHEN** an import is refused for a failed integrity check
 - **THEN** no statement, transaction or expense is written
+
+### Requirement: Mapping placeholder normalization
+
+The system SHALL treat a placeholder bank value from a generated mapping, such as an empty string or the text null, none or n/a, as no bank, and SHALL store null instead of the placeholder. A real bank name SHALL be kept.
+
+#### Scenario: Placeholder becomes no bank
+
+- **WHEN** a generated mapping carries the text null as the bank name
+- **THEN** the profile and the statement record no bank
+
+#### Scenario: Real name kept
+
+- **WHEN** a generated mapping carries a real bank name
+- **THEN** the profile and the statement record that name
