@@ -4,7 +4,7 @@ const EOCD_SIG = 0x06054b50;
 const CENTRAL_SIG = 0x02014b50;
 
 /** Guard against a zip bomb: refuse an archive whose parts inflate past this. */
-export const MAX_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
+export const MAX_UNCOMPRESSED_BYTES = 8 * 1024 * 1024;
 
 /**
  * Read the entries of a ZIP archive using only node:zlib. XLSX is a ZIP of XML

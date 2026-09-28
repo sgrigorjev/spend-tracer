@@ -20,7 +20,7 @@ import { chooseBand, rankCandidates, DATE_WINDOW_DAYS, type ScoredCandidate } fr
 /** Rows beyond this in one statement are refused, to bound memory and cost. */
 export const MAX_STATEMENT_ROWS = 20000;
 /** Statement files larger than this are refused before parsing. */
-export const MAX_STATEMENT_BYTES = 25 * 1024 * 1024;
+export const MAX_STATEMENT_BYTES = 4 * 1024 * 1024;
 
 /** Extract transactions from a PDF or image statement. Injected by the host. */
 export interface DocumentExtractor {
