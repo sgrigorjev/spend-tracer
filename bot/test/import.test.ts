@@ -312,6 +312,25 @@ test("candidate lookup never returns an outside-family expense", () => {
   store.close();
 });
 
+test("a removed member loses a shared expense", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  const family = store.createFamily(a.id, "Home");
+  assert.equal(family.ok, true);
+  const familyId = family.ok ? (family.familyId ?? 0) : 0;
+  store.inviteByEmail(familyId, a.id, "b@x.com");
+  store.acceptInvitation(b.id, familyId);
+
+  const expenseId = store.appendExpense(baseExpense({ user_id: a.id }));
+  store.addParticipant({ expense_id: expenseId, user_id: b.id, role: "confirmer", origin: "import", confidence: 1 });
+  assert.equal(store.listExpensesForUser(b.id, "2026-09-01", "2026-09-30", 10, 0).items.length, 1);
+
+  store.leaveFamily(b.id);
+  assert.equal(store.listExpensesForUser(b.id, "2026-09-01", "2026-09-30", 10, 0).items.length, 0);
+  store.close();
+});
+
 test("unlink refuses an expense outside the importer's family", () => {
   const store = createStore(":memory:");
   const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
@@ -328,6 +347,24 @@ test("a same-day different-merchant expense is a middle-band match", () => {
   const expense = store.listExpenses(user.id, "2026-09-01", "2026-09-30", 10, 0).items[0];
   const ranked = rankCandidates({ expense_date: "2026-09-26", description: "MERCADONA ORRIOLS" }, [expense]);
   assert.equal(chooseBand(ranked), "middle");
+  store.close();
+});
+
+test("a rejected learned profile is discarded", async () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => ({ bank: "PrivatBank", roles: CSV_ROLES, directives: CSV_DIRECTIVES }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => false,
+    decide: async () => ({ action: "separate" as const }),
+  };
+  await assert.rejects(
+    importStatement(store, user, { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" }, deps),
+  );
+  assert.equal(store.listProfiles(user.id).length, 0);
   store.close();
 });
 

@@ -94,7 +94,9 @@ async function main(): Promise<void> {
     },
     decide: async (input: DecisionInput): Promise<DecisionOutcome> => {
       printDecision(input);
-      if (args.yes) return { action: "merge", expenseId: input.ranked[0].expense.id };
+      // --yes only skips the profile confirmation; an uncertain match is never
+      // merged automatically, since a wrong merge is worse than a duplicate.
+      if (args.yes) return { action: "separate" };
       const answer = await rl.question("Merge with 1/2/3, [s]eparate, or [i]gnore? ");
       const trimmed = answer.trim().toLowerCase();
       const pick = Number(trimmed);

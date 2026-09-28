@@ -245,7 +245,11 @@ export async function importStatement(
       if (!integrity.ok) throw new Error(`learned profile failed verification: ${integrity.reason}`);
       const profile = store.findProfile(user.id, fingerprint)!;
       const confirmed = await deps.confirmProfile({ profile, bank: mapping.bank, rows: drafts, integrity });
-      if (!confirmed) throw new Error("profile rejected");
+      if (!confirmed) {
+        // Drop the rejected draft so the user can retry the format later.
+        store.deleteProfile(user.id, fingerprint);
+        throw new Error("profile rejected");
+      }
       store.setProfileStatus(user.id, fingerprint, "verified");
       bank = mapping.bank;
       profileState = "learned";
@@ -256,14 +260,40 @@ export async function importStatement(
     if (!integrity.ok) throw new Error(`document failed verification: ${integrity.reason}`);
   }
 
+  // The statement and all of its rows land in one transaction, so a failure
+  // never leaves a statement with only part of its rows stored.
   const range = minMaxDate(drafts);
-  const statementId = store.appendStatement({
-    user_id: user.id,
-    bank,
-    format: kind,
-    file_name: options.filePath.split("/").pop() ?? options.filePath,
-    period_from: range.from,
-    period_to: range.to,
+  const stored: Array<{ id: number; draft: TransactionDraft }> = [];
+  const statementId = store.transaction(() => {
+    const id = store.appendStatement({
+      user_id: user.id,
+      bank,
+      format: kind,
+      file_name: options.filePath.split("/").pop() ?? options.filePath,
+      period_from: range.from,
+      period_to: range.to,
+    });
+    for (const draft of drafts) {
+      const transactionId = store.appendTransaction({
+        statement_id: id,
+        user_id: user.id,
+        account: draft.account,
+        paid_at: draft.paid_at,
+        expense_date: draft.expense_date,
+        amount_minor: draft.amount_minor,
+        currency: draft.currency,
+        account_amount_minor: draft.account_amount_minor,
+        account_currency: draft.account_currency,
+        description: draft.description,
+        category: draft.category,
+        balance_minor: draft.balance_minor,
+        direction: draft.direction,
+        card: draft.card,
+        fingerprint: draft.fingerprint,
+      });
+      if (transactionId !== null) stored.push({ id: transactionId, draft });
+    }
+    return id;
   });
 
   const summary: ImportSummary = {
@@ -272,38 +302,15 @@ export async function importStatement(
     kind,
     profile: profileState,
     parsed: drafts.length,
-    stored: 0,
-    skipped: 0,
+    stored: stored.length,
+    skipped: drafts.length - stored.length,
     linked: 0,
     created: 0,
     ignored: 0,
     asked: 0,
   };
 
-  for (const draft of drafts) {
-    const transactionId = store.appendTransaction({
-      statement_id: statementId,
-      user_id: user.id,
-      account: draft.account,
-      paid_at: draft.paid_at,
-      expense_date: draft.expense_date,
-      amount_minor: draft.amount_minor,
-      currency: draft.currency,
-      account_amount_minor: draft.account_amount_minor,
-      account_currency: draft.account_currency,
-      description: draft.description,
-      category: draft.category,
-      balance_minor: draft.balance_minor,
-      direction: draft.direction,
-      card: draft.card,
-      fingerprint: draft.fingerprint,
-    });
-    if (transactionId === null) {
-      summary.skipped++;
-      continue;
-    }
-    summary.stored++;
-
+  for (const { id: transactionId, draft } of stored) {
     if (draft.direction !== "outflow" || draft.amount_minor === null || !draft.currency) {
       store.setTransactionResolution(transactionId, { state: "ignored", expense_id: null });
       summary.ignored++;

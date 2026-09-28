@@ -331,7 +331,7 @@ function resolveDirection(
 ): TransactionDirection {
   const sign = directives.sign ?? (roles.debit || roles.credit ? "separate_columns" : "signed");
 
-  if (sign === "separate_columns" || roles.debit || roles.credit) {
+  if (sign === "separate_columns") {
     const debit = parseNumber(cellFor(row, index, roles.debit), directives);
     if (debit != null && debit !== 0) return "outflow";
     return "inflow";

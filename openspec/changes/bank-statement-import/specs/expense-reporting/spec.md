@@ -2,7 +2,7 @@
 
 ### Requirement: Personal scope
 
-Both endpoints SHALL read the expenses the signed-in user owns and the expenses the user takes part in as a participant. Monetary aggregates SHALL attribute each expense to exactly one user: the confirmed payer when one exists, otherwise the recorder. A shared expense that the user takes part in but does not own SHALL appear in the list marked as shared and SHALL contribute to no monetary aggregate for that user.
+Both endpoints SHALL read the expenses the signed-in user owns and the expenses the user takes part in as a participant. Monetary aggregates SHALL attribute each expense to exactly one user: the confirmed payer when one exists, otherwise the recorder. A shared expense that the user takes part in but does not own and is not the confirmed payer of SHALL appear in the list marked as shared and SHALL contribute to no monetary aggregate for that user.
 
 #### Scenario: Own expenses only
 

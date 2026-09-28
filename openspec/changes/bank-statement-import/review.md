@@ -48,6 +48,19 @@ The page is capped at 100 rows and the query is local SQLite, so this is not wor
 
 This matches the agreed attribution rule (confirmed payer wins, the other participant sees it marked shared but not counted). The list already returns `shared` and the participants, so a UI hint is a frontend follow-up, not a backend fix.
 
+## CodeRabbit round 1
+
+All nine findings were applied, each compatible with the specs and the design.
+
+- Attribution now treats any non-bot payer as confirmed, so an import or a manual payer wins over the recorder, and the weekday projection uses the same rule.
+- CLI `--yes` no longer auto-merges an uncertain match; it creates a separate expense, since a wrong merge is worse than a duplicate.
+- The expense-reporting spec wording was tightened to exclude a non-owner participant from aggregates only when they are not the confirmed payer.
+- The scoped page and count require the viewer and the owner to be active members of the same family, so a removed member loses a shared expense; covered by a new test.
+- `appendTransaction` deduplicates with `ON CONFLICT DO NOTHING`, atomic under concurrency.
+- The statement and its rows are stored in one transaction; a rejected learned profile is deleted so the format can be retried; both covered by tests.
+- The sign check enters the debit/credit branch only for `separate_columns`.
+- The ZIP reader rejects an out-of-bounds local header or entry data.
+
 ## Verdict after fixes
 
 The two high findings and the family-boundary finding are resolved with tests. Remaining items are low and either declined with a reason or tracked as open tasks.

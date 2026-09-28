@@ -368,6 +368,7 @@ export interface Store {
   findProfile(userId: number, fingerprint: string): ProfileRow | undefined;
   listProfiles(userId: number): ProfileRow[];
   setProfileStatus(userId: number, fingerprint: string, status: ImportProfileStatus): void;
+  deleteProfile(userId: number, fingerprint: string): void;
   markProfileUsed(userId: number, fingerprint: string): void;
   // participants and events
   addParticipant(row: ParticipantInsert): void;
@@ -736,6 +737,7 @@ export function createStore(dbPath: string): Store {
       account_amount_minor, account_currency, description, category, balance_minor, direction, card, fingerprint,
       created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (user_id, fingerprint) DO NOTHING
   `);
   const selectTransactionByFingerprint = db.prepare(
     "SELECT * FROM bank_transactions WHERE user_id = ? AND fingerprint = ?",
@@ -757,6 +759,7 @@ export function createStore(dbPath: string): Store {
   const updateProfileStatus = db.prepare(
     "UPDATE import_profiles SET status = ? WHERE user_id = ? AND fingerprint = ?",
   );
+  const removeProfile = db.prepare("DELETE FROM import_profiles WHERE user_id = ? AND fingerprint = ?");
   const touchProfile = db.prepare(
     "UPDATE import_profiles SET last_used_at = ?, use_count = use_count + 1 WHERE user_id = ? AND fingerprint = ?",
   );
@@ -777,10 +780,14 @@ export function createStore(dbPath: string): Store {
   );
   const selectEvents = db.prepare("SELECT * FROM expense_events WHERE expense_id = ? ORDER BY id");
 
-  /** Attribute an expense to its confirmed payer, or to its owner when none. */
+  /**
+   * Attribute an expense to its confirmed payer, or to its owner when none.
+   * A payer is confirmed when the origin is not the bot: the bot records an
+   * assumed payer at capture time, while an import or a manual entry confirms.
+   */
   const ATTRIBUTED_USER =
     "COALESCE((SELECT p.user_id FROM expense_participants p " +
-    "WHERE p.expense_id = e.id AND p.role = 'payer' AND p.origin = 'import' LIMIT 1), e.user_id)";
+    "WHERE p.expense_id = e.id AND p.role = 'payer' AND p.origin <> 'bot' LIMIT 1), e.user_id)";
 
   const selectScopedSummary = db.prepare(`
     SELECT
@@ -820,18 +827,28 @@ export function createStore(dbPath: string): Store {
     ) WHERE attributed_user_id = ?
     GROUP BY weekday
   `);
+  // A participant keeps seeing a shared expense only while they and the owner
+  // are still active members of the same family, so a removed member loses it.
   const selectScopedPage = db.prepare(`
     SELECT e.* FROM expenses e
     WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
       AND (e.user_id = ? OR EXISTS (
-        SELECT 1 FROM expense_participants p WHERE p.expense_id = e.id AND p.user_id = ?))
+        SELECT 1 FROM expense_participants p
+        JOIN family_members viewer ON viewer.user_id = p.user_id AND viewer.status = 'active'
+        JOIN family_members owner ON owner.family_id = viewer.family_id
+          AND owner.user_id = e.user_id AND owner.status = 'active'
+        WHERE p.expense_id = e.id AND p.user_id = ?))
     ORDER BY e.expense_date DESC, e.id DESC LIMIT ? OFFSET ?
   `);
   const selectScopedPageCount = db.prepare(`
     SELECT COUNT(*) AS total FROM expenses e
     WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
       AND (e.user_id = ? OR EXISTS (
-        SELECT 1 FROM expense_participants p WHERE p.expense_id = e.id AND p.user_id = ?))
+        SELECT 1 FROM expense_participants p
+        JOIN family_members viewer ON viewer.user_id = p.user_id AND viewer.status = 'active'
+        JOIN family_members owner ON owner.family_id = viewer.family_id
+          AND owner.user_id = e.user_id AND owner.status = 'active'
+        WHERE p.expense_id = e.id AND p.user_id = ?))
   `);
 
   /** Import profiles store roles and directives as JSON text in the row. */
@@ -1249,10 +1266,6 @@ export function createStore(dbPath: string): Store {
       return Number(result.lastInsertRowid);
     },
     appendTransaction(row) {
-      const existing = selectTransactionByFingerprint.get(row.user_id, row.fingerprint) as unknown as
-        | TransactionRow
-        | undefined;
-      if (existing) return null;
       const result = insertTransaction.run(
         row.statement_id,
         row.user_id,
@@ -1271,6 +1284,7 @@ export function createStore(dbPath: string): Store {
         row.fingerprint,
         nowIso(),
       );
+      if (result.changes === 0) return null;
       return Number(result.lastInsertRowid);
     },
     findTransactionByFingerprint(userId, fingerprint) {
@@ -1305,6 +1319,9 @@ export function createStore(dbPath: string): Store {
     },
     setProfileStatus(userId, fingerprint, status) {
       updateProfileStatus.run(status, userId, fingerprint);
+    },
+    deleteProfile(userId, fingerprint) {
+      removeProfile.run(userId, fingerprint);
     },
     markProfileUsed(userId, fingerprint) {
       touchProfile.run(nowIso(), userId, fingerprint);

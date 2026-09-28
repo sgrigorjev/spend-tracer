@@ -40,12 +40,14 @@ export function readZip(buffer: Buffer, maxBytes = MAX_UNCOMPRESSED_BYTES): Map<
     const localOffset = buffer.readUInt32LE(offset + 42);
     const name = buffer.subarray(offset + 46, offset + 46 + nameLen).toString("utf8");
 
+    if (localOffset + 30 > buffer.length) throw new Error("corrupt zip local header");
     const localNameLen = buffer.readUInt16LE(localOffset + 26);
     const localExtraLen = buffer.readUInt16LE(localOffset + 28);
     // Reject from the header before inflating, and cap the inflate as well in
     // case the header understates the real size. This is the zip-bomb guard.
     if (total + uncompressedSize > maxBytes) throw new Error("zip archive expands past the allowed size");
     const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+    if (dataStart + compressedSize > buffer.length) throw new Error("corrupt zip entry data");
     const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
     const data =
       method === 0 ? Buffer.from(compressed) : inflateRawSync(compressed, { maxOutputLength: maxBytes - total });
