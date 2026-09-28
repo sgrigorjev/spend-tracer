@@ -370,6 +370,7 @@ export interface Store {
   findProfile(userId: number, fingerprint: string): ProfileRow | undefined;
   listProfiles(userId: number): ProfileRow[];
   setProfileStatus(userId: number, fingerprint: string, status: ImportProfileStatus): void;
+  setProfileBank(userId: number, fingerprint: string, bank: string | null): void;
   deleteProfile(userId: number, fingerprint: string): void;
   markProfileUsed(userId: number, fingerprint: string): void;
   // participants and events
@@ -766,6 +767,7 @@ export function createStore(dbPath: string): Store {
   const updateProfileStatus = db.prepare(
     "UPDATE import_profiles SET status = ? WHERE user_id = ? AND fingerprint = ?",
   );
+  const updateProfileBank = db.prepare("UPDATE import_profiles SET bank = ? WHERE user_id = ? AND fingerprint = ?");
   const removeProfile = db.prepare("DELETE FROM import_profiles WHERE user_id = ? AND fingerprint = ?");
   const touchProfile = db.prepare(
     "UPDATE import_profiles SET last_used_at = ?, use_count = use_count + 1 WHERE user_id = ? AND fingerprint = ?",
@@ -1334,6 +1336,9 @@ export function createStore(dbPath: string): Store {
     },
     setProfileStatus(userId, fingerprint, status) {
       updateProfileStatus.run(status, userId, fingerprint);
+    },
+    setProfileBank(userId, fingerprint, bank) {
+      updateProfileBank.run(bank, userId, fingerprint);
     },
     deleteProfile(userId, fingerprint) {
       removeProfile.run(userId, fingerprint);

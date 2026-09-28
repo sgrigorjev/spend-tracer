@@ -15,15 +15,17 @@ import {
 interface CliArgs {
   file: string | null;
   email: string | null;
+  bank: string | null;
   yes: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { file: null, email: null, yes: false };
+  const args: CliArgs = { file: null, email: null, bank: null, yes: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--file") args.file = argv[++i] ?? null;
     else if (arg === "--email") args.email = argv[++i] ?? null;
+    else if (arg === "--bank") args.bank = argv[++i] ?? null;
     else if (arg === "--yes") args.yes = true;
     else if (!arg.startsWith("--") && !args.file) args.file = arg;
   }
@@ -56,7 +58,7 @@ function printDecision(input: DecisionInput): void {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (!args.file) {
-    stdout.write("Usage: node src/cli/import.ts --file <statement> [--email <user>] [--yes]\n");
+    stdout.write("Usage: node src/cli/import.ts --file <statement> [--email <user>] [--bank <name>] [--yes]\n");
     process.exitCode = 1;
     return;
   }
@@ -82,15 +84,19 @@ async function main(): Promise<void> {
   const deps: ImportDeps = {
     generateMapping,
     extractDocument,
-    confirmProfile: async (preview: ProfilePreview): Promise<boolean> => {
+    confirmProfile: async (preview: ProfilePreview) => {
       printPreview(preview);
       if (!preview.integrity.ok) {
         stdout.write(`Integrity failed: ${preview.integrity.reason}\n`);
-        return false;
+        return { confirmed: false };
       }
-      if (args.yes) return true;
+      if (args.yes) return { confirmed: true, bank: args.bank ?? undefined };
       const answer = await rl.question("Save this profile and import? [y/N] ");
-      return /^y(es)?$/i.test(answer.trim());
+      if (!/^y(es)?$/i.test(answer.trim())) return { confirmed: false };
+      if (args.bank !== null) return { confirmed: true, bank: args.bank };
+      const suggested = preview.bank ?? "";
+      const typed = await rl.question(`Bank name${suggested ? ` [${suggested}]` : ""} (Enter to keep): `);
+      return { confirmed: true, bank: typed.trim() || suggested || null };
     },
     decide: async (input: DecisionInput): Promise<DecisionOutcome> => {
       printDecision(input);
