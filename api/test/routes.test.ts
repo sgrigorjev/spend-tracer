@@ -392,7 +392,7 @@ test("the summary converts to the display currency with one rate per request", a
   let calls = 0;
   holder.fetch = () => {
     calls += 1;
-    return Promise.resolve({ ok: true, json: async () => ({ date: "2026-09-27", rates: { USD: 1.1 } }) });
+    return Promise.resolve({ ok: true, json: async () => ({ date: "2026-09-27", base: "EUR", quote: "USD", rate: 1.1 }) });
   };
 
   try {

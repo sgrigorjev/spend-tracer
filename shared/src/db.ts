@@ -322,6 +322,17 @@ export interface Store {
   // expenses
   appendExpense(row: ExpenseInsert): number;
   findExpenseById(id: number): ExpenseRow | undefined;
+  listExpensesMissingBase(): ExpenseRow[];
+  /**
+   * Fill a base equivalent only when the row is unchanged since it was read and
+   * still has none, so a concurrent edit is not overwritten. Returns true when
+   * the update applied.
+   */
+  backfillExpenseBase(
+    id: number,
+    expected: { amount_minor: number | null; currency: string | null; expense_date: string },
+    base: { base_amount_minor: number; base_currency: string; fx_rate: number; fx_rate_date: string },
+  ): boolean;
   setExpenseStatus(id: number, status: ExpenseStatus): void;
   updateExpense(id: number, fields: Partial<ExpenseUpdate>): void;
   expenseSummary(userId: number, from: string, to: string): ExpenseSummary;
@@ -631,6 +642,13 @@ export function createStore(dbPath: string): Store {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const selectExpenseById = db.prepare("SELECT * FROM expenses WHERE id = ?");
+  const selectExpensesMissingBase = db.prepare(
+    "SELECT * FROM expenses WHERE base_amount_minor IS NULL ORDER BY id",
+  );
+  const backfillBase = db.prepare(
+    "UPDATE expenses SET base_amount_minor = ?, base_currency = ?, fx_rate = ?, fx_rate_date = ?, updated_at = ? " +
+      "WHERE id = ? AND base_amount_minor IS NULL AND amount_minor IS ? AND currency IS ? AND expense_date = ?",
+  );
   const updateStatus = db.prepare("UPDATE expenses SET status = ?, updated_at = ? WHERE id = ?");
 
   const selectSummaryTotals = db.prepare(`
@@ -990,6 +1008,23 @@ export function createStore(dbPath: string): Store {
     },
     findExpenseById(id) {
       return selectExpenseById.get(id) as unknown as ExpenseRow | undefined;
+    },
+    listExpensesMissingBase() {
+      return selectExpensesMissingBase.all() as unknown as ExpenseRow[];
+    },
+    backfillExpenseBase(id, expected, base) {
+      const result = backfillBase.run(
+        base.base_amount_minor,
+        base.base_currency,
+        base.fx_rate,
+        base.fx_rate_date,
+        nowIso(),
+        id,
+        expected.amount_minor,
+        expected.currency,
+        expected.expense_date,
+      );
+      return result.changes === 1;
     },
     setExpenseStatus(id, status) {
       updateStatus.run(status, nowIso(), id);

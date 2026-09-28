@@ -8,6 +8,7 @@
     "dev": "node --watch src/index.ts",
     "test": "node --test \"test/*.test.ts\"",
     "import": "node src/cli/import.ts",
+    "backfill:rates": "node src/cli/backfill-rates.ts",
     "generate:voices": "node test/scripts/generate-voices.ts",
     "generate:receipts": "node test/scripts/generate-receipts.ts",
     "typecheck": "tsc --noEmit"
