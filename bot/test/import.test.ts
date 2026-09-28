@@ -1,0 +1,309 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createStore, type ExpenseInsert, type ProfileDirectives, type ProfileRoleMap } from "../src/db.ts";
+import { readCsv, parseDelimited, decodeText } from "../../shared/src/import/csv.ts";
+import { readXlsx } from "../../shared/src/import/xlsx.ts";
+import { detectKind } from "../../shared/src/import/detect.ts";
+import { formatFingerprint } from "../../shared/src/import/fingerprint.ts";
+import { applyProfile, checkIntegrity, parseDate, parseNumber } from "../../shared/src/import/profile.ts";
+import { chooseBand, rankCandidates } from "../../shared/src/import/reconcile.ts";
+import { importStatement, unlinkTransaction } from "../../shared/src/import/pipeline.ts";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const fixtures = path.join(here, "fixtures");
+
+const CSV_ROLES: ProfileRoleMap = {
+  date: "Дата",
+  category: "Категорія",
+  card: "Картка",
+  description: "Опис операції",
+  account_amount: "Сума в валюті картки",
+  account_currency: "Валюта картки",
+  amount: "Сума в валюті транзакції",
+  amount_currency: "Валюта транзакції",
+  balance: "Залишок",
+};
+
+const CSV_DIRECTIVES: ProfileDirectives = {
+  date_format: "DD.MM.YYYY HH:mm:ss",
+  decimal: ".",
+  thousands: "",
+  sign: "signed",
+  header_row: 1,
+};
+
+function baseExpense(overrides: Partial<ExpenseInsert>): ExpenseInsert {
+  return {
+    user_id: 1,
+    amount_minor: 1639,
+    currency: "EUR",
+    base_amount_minor: 1639,
+    base_currency: "EUR",
+    fx_rate: 1,
+    fx_rate_date: "2026-09-26",
+    category: "groceries",
+    description: "MERCADONA ORRIOLS",
+    paid_at: "2026-09-26T15:56:33",
+    paid_at_precision: "minute",
+    expense_date: "2026-09-26",
+    source: "photo",
+    confidence: 0.9,
+    status: "confirmed",
+    ...overrides,
+  };
+}
+
+test("detects a file kind from content, not its name", () => {
+  assert.equal(detectKind(Buffer.from("Дата;Сума\n")), "csv");
+  assert.equal(detectKind(Buffer.from("%PDF-1.7\n")), "pdf");
+  assert.equal(detectKind(Buffer.from([0x89, 0x50, 0x4e, 0x47])), "image");
+  assert.equal(detectKind(readFileSync(path.join(fixtures, "privat-sample.xlsx"))), "xlsx");
+});
+
+test("readCsv parses a semicolon statement with Cyrillic headers", () => {
+  const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
+  assert.equal(grid.length, 4);
+  assert.equal(grid[0][0], "Дата");
+  assert.equal(grid[1][4], "-844.85");
+});
+
+test("readXlsx reads inline-string cells", () => {
+  const grid = readXlsx(readFileSync(path.join(fixtures, "privat-sample.xlsx")));
+  assert.equal(grid[0][0], "Дата");
+  assert.equal(grid[0][1], "Опис операції");
+  assert.equal(grid[1][1], "MERCADONA ORRIOLS");
+  assert.equal(grid[1][2], "-844.85");
+});
+
+test("parseDelimited handles quotes, separators and newlines", () => {
+  const grid = parseDelimited('a,b\n"x,1","line\n2"', ",");
+  assert.deepEqual(grid, [
+    ["a", "b"],
+    ["x,1", "line\n2"],
+  ]);
+});
+
+test("decodeText falls back when a BOM is present", () => {
+  const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("Дата", "utf8")]);
+  assert.equal(decodeText(bytes), "Дата");
+});
+
+test("parseNumber and parseDate honor separators and formats", () => {
+  assert.equal(parseNumber("1.234,56", { decimal: ",", thousands: "." }), 1234.56);
+  assert.equal(parseNumber("-844,85", { decimal: "," }), -844.85);
+  assert.equal(parseDate("26.09.2026 15:56:33", "DD.MM.YYYY HH:mm:ss"), "2026-09-26T15:56:33");
+  assert.equal(parseDate("2026-09-26"), "2026-09-26");
+});
+
+test("format fingerprint matches reordered headers and separates changed ones", () => {
+  const sample = [["1", "2", "3"]];
+  const a = formatFingerprint("csv", ["Date", "Amount", "Note"], sample);
+  const b = formatFingerprint("csv", ["Note", "Date", "Amount"], sample);
+  const c = formatFingerprint("csv", ["Date", "Amount", "Merchant"], sample);
+  assert.equal(a, b);
+  assert.notEqual(a, c);
+});
+
+test("applyProfile normalizes amounts, direction and transfers", () => {
+  const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
+  const drafts = applyProfile(grid, { roles: CSV_ROLES, directives: CSV_DIRECTIVES });
+  assert.equal(drafts.length, 3);
+
+  const mercadona = drafts[0];
+  assert.equal(mercadona.direction, "outflow");
+  assert.equal(mercadona.currency, "EUR");
+  assert.equal(mercadona.amount_minor, -1639);
+  assert.equal(mercadona.account_currency, "UAH");
+  assert.equal(mercadona.account_amount_minor, -84485);
+  assert.equal(mercadona.expense_date, "2026-09-26");
+
+  const salary = drafts[2];
+  assert.equal(salary.direction, "inflow");
+});
+
+test("checkIntegrity accepts a consistent balance sequence", () => {
+  const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
+  const drafts = applyProfile(grid, { roles: CSV_ROLES, directives: CSV_DIRECTIVES });
+  assert.deepEqual(checkIntegrity(drafts), { ok: true });
+});
+
+test("checkIntegrity rejects a broken balance", () => {
+  const grid = readCsv(readFileSync(path.join(fixtures, "privat-sample.csv")));
+  const drafts = applyProfile(grid, { roles: CSV_ROLES, directives: CSV_DIRECTIVES });
+  drafts[1].balance_minor = 1;
+  const result = checkIntegrity(drafts);
+  assert.equal(result.ok, false);
+});
+
+test("appendExpense records a recorder, an assumed payer and a created event", () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const id = store.appendExpense(baseExpense({ user_id: user.id }));
+
+  const roles = store.listParticipants(id).map((p) => `${p.role}:${p.origin}`);
+  assert.deepEqual(roles.sort(), ["payer:bot", "recorder:bot"]);
+  assert.equal(store.listExpenseEvents(id)[0].kind, "created");
+  store.close();
+});
+
+test("a transaction fingerprint is stored once", () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const statementId = store.appendStatement({
+    user_id: user.id,
+    bank: "PrivatBank",
+    format: "csv",
+    file_name: "s.csv",
+    period_from: "2026-09-01",
+    period_to: "2026-09-30",
+  });
+  const row = {
+    statement_id: statementId,
+    user_id: user.id,
+    account: "card",
+    paid_at: "2026-09-26T15:56:33",
+    expense_date: "2026-09-26",
+    amount_minor: 1639,
+    currency: "EUR",
+    account_amount_minor: 84485,
+    account_currency: "UAH",
+    description: "MERCADONA",
+    category: null,
+    balance_minor: 993637,
+    direction: "outflow" as const,
+    card: "****6331",
+    fingerprint: "fp-1",
+  };
+  assert.notEqual(store.appendTransaction(row), null);
+  assert.equal(store.appendTransaction(row), null);
+  store.close();
+});
+
+test("profiles are scoped per user", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  store.saveProfile({
+    user_id: a.id,
+    fingerprint: "fp",
+    bank: "PrivatBank",
+    kind: "csv",
+    roles: CSV_ROLES,
+    directives: CSV_DIRECTIVES,
+    status: "verified",
+  });
+  assert.ok(store.findProfile(a.id, "fp"));
+  assert.equal(store.findProfile(b.id, "fp"), undefined);
+  store.close();
+});
+
+test("attribution follows the confirmed payer, list shows a shared expense", () => {
+  const store = createStore(":memory:");
+  const a = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const b = store.resolveUser({ email: "b@x.com", name: "B", avatar: null, provider: "g", subject: "b" });
+  const family = store.createFamily(a.id, "Home");
+  assert.equal(family.ok, true);
+  const familyId = family.ok ? (family.familyId ?? 0) : 0;
+  store.inviteByEmail(familyId, a.id, "b@x.com");
+  store.acceptInvitation(b.id, familyId);
+
+  const expenseId = store.appendExpense(baseExpense({ user_id: a.id, expense_date: "2026-09-26" }));
+  const statementId = store.appendStatement({
+    user_id: b.id,
+    bank: "PrivatBank",
+    format: "csv",
+    file_name: "s.csv",
+    period_from: "2026-09-01",
+    period_to: "2026-09-30",
+  });
+  const transactionId = store.appendTransaction({
+    statement_id: statementId,
+    user_id: b.id,
+    account: "card",
+    paid_at: "2026-09-26T15:56:33",
+    expense_date: "2026-09-26",
+    amount_minor: 1639,
+    currency: "EUR",
+    account_amount_minor: 84485,
+    account_currency: "UAH",
+    description: "MERCADONA",
+    category: null,
+    balance_minor: null,
+    direction: "outflow",
+    card: "****6331",
+    fingerprint: "fp-link",
+  })!;
+  store.transaction(() => {
+    store.addParticipant({ expense_id: expenseId, user_id: b.id, role: "payer", origin: "import", confidence: 1 });
+    store.addParticipant({ expense_id: expenseId, user_id: b.id, role: "confirmer", origin: "import", confidence: 1 });
+    store.setTransactionResolution(transactionId, { state: "linked", expense_id: expenseId });
+  });
+
+  assert.equal(store.expenseSummaryForUser(a.id, "2026-09-01", "2026-09-30").confirmed_total_minor, 0);
+  assert.equal(store.expenseSummaryForUser(b.id, "2026-09-01", "2026-09-30").confirmed_total_minor, 1639);
+
+  const list = store.listExpensesForUser(b.id, "2026-09-01", "2026-09-30", 10, 0);
+  assert.equal(list.items.length, 1);
+  assert.equal(list.items[0].user_id, a.id);
+
+  unlinkTransaction(store, b.id, transactionId, expenseId);
+  assert.equal(store.findTransactionByFingerprint(b.id, "fp-link")!.state, "unmatched");
+  store.close();
+});
+
+test("reconciliation scores an exact same-day expense as a high match", () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const id = store.appendExpense(baseExpense({ user_id: user.id }));
+  const expense = store.listExpenses(user.id, "2026-09-01", "2026-09-30", 10, 0).items[0];
+  const ranked = rankCandidates({ expense_date: "2026-09-26", description: "MERCADONA ORRIOLS" }, [expense]);
+  assert.equal(chooseBand(ranked), "high");
+  assert.equal(ranked[0].expense.id, id);
+  store.close();
+});
+
+test("pipeline learns a profile, then reuses it and skips duplicates", async () => {
+  const store = createStore(":memory:");
+  const user = store.resolveUser({ email: "a@x.com", name: "A", avatar: null, provider: "g", subject: "a" });
+  const deps = {
+    generateMapping: async () => ({
+      bank: "PrivatBank",
+      roles: CSV_ROLES,
+      directives: CSV_DIRECTIVES,
+    }),
+    extractDocument: async () => {
+      throw new Error("not used");
+    },
+    confirmProfile: async () => true,
+    decide: async () => ({ action: "separate" as const }),
+  };
+
+  const first = await importStatement(
+    store,
+    user,
+    { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" },
+    deps,
+  );
+  assert.equal(first.profile, "learned");
+  assert.equal(first.parsed, 3);
+  assert.equal(first.created, 2);
+  assert.equal(first.ignored, 1);
+
+  const expenses = store.listExpensesForUser(user.id, "2026-01-01", "2026-12-31", 10, 0);
+  assert.equal(expenses.items.length, 2);
+
+  const second = await importStatement(
+    store,
+    user,
+    { filePath: path.join(fixtures, "privat-sample.csv"), baseCurrency: "EUR" },
+    deps,
+  );
+  assert.equal(second.profile, "reused");
+  assert.equal(second.skipped, 3);
+  assert.equal(second.created, 0);
+  assert.equal(store.listExpensesForUser(user.id, "2026-01-01", "2026-12-31", 10, 0).items.length, 2);
+  store.close();
+});

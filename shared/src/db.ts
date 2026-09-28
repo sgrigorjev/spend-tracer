@@ -3,11 +3,29 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 
-export type ExpenseSource = "text" | "photo" | "voice";
+export type ExpenseSource = "text" | "photo" | "voice" | "import";
 export type ExpenseStatus = "pending" | "confirmed" | "rejected";
 export type PaidAtPrecision = "date" | "minute";
 export type FamilyRole = "owner" | "member";
 export type FamilyMemberStatus = "invited" | "active";
+/** How a user is involved in an expense. */
+export type ExpenseParticipantRole = "recorder" | "payer" | "confirmer";
+/** Which path attached a participant: the bot, an import, or a manual action. */
+export type ParticipantOrigin = "bot" | "import" | "manual";
+/** A learned import profile is draft until the user confirms it. */
+export type ImportProfileStatus = "draft" | "verified";
+/** Money direction of a statement row. Only outflows become expenses. */
+export type TransactionDirection = "outflow" | "inflow" | "transfer";
+/** What reconciliation decided for an imported transaction. */
+export type TransactionState = "unmatched" | "linked" | "created" | "ignored";
+/** Kinds of audit events recorded against an expense. */
+export type ExpenseEventKind =
+  | "created"
+  | "linked"
+  | "unlinked"
+  | "enriched"
+  | "participant_added"
+  | "participant_removed";
 
 /** One row in the users table. */
 export interface UserRow {
@@ -166,6 +184,133 @@ export class ScopeForbiddenError extends Error {
   }
 }
 
+/** Fields supplied when storing an imported statement. */
+export interface StatementInsert {
+  user_id: number;
+  bank: string | null;
+  format: string;
+  file_name: string;
+  period_from: string | null;
+  period_to: string | null;
+}
+
+/** One row in the bank_statements table. */
+export interface StatementRow extends StatementInsert {
+  id: number;
+  created_at: string;
+}
+
+/** Fields supplied when storing a parsed statement row. */
+export interface TransactionInsert {
+  statement_id: number;
+  user_id: number;
+  account: string | null;
+  paid_at: string | null;
+  expense_date: string;
+  amount_minor: number | null;
+  currency: string | null;
+  account_amount_minor: number | null;
+  account_currency: string | null;
+  description: string;
+  category: string | null;
+  balance_minor: number | null;
+  direction: TransactionDirection;
+  card: string | null;
+  fingerprint: string;
+}
+
+/** One row in the bank_transactions table. */
+export interface TransactionRow extends TransactionInsert {
+  id: number;
+  expense_id: number | null;
+  state: TransactionState;
+  created_at: string;
+}
+
+/** Outcome of resolving a transaction during reconciliation. */
+export interface TransactionResolution {
+  state: TransactionState;
+  expense_id: number | null;
+}
+
+/** Semantic roles an import profile maps to column or field names. */
+export interface ProfileRoleMap {
+  date?: string | null;
+  amount?: string | null;
+  amount_currency?: string | null;
+  account_amount?: string | null;
+  account_currency?: string | null;
+  description?: string | null;
+  category?: string | null;
+  balance?: string | null;
+  card?: string | null;
+  account?: string | null;
+  direction?: string | null;
+  debit?: string | null;
+  credit?: string | null;
+}
+
+/** How a profile reads dates, numbers and the direction of money. */
+export interface ProfileDirectives {
+  date_format?: string;
+  decimal?: string;
+  thousands?: string;
+  header_row?: number;
+  delimiter?: string;
+  encoding?: string;
+  sign?: "signed" | "separate_columns" | "direction_column";
+  prefer?: "transaction" | "account";
+}
+
+/** Fields supplied when storing an import profile. */
+export interface ProfileInsert {
+  user_id: number;
+  fingerprint: string;
+  bank: string | null;
+  kind: string;
+  roles: ProfileRoleMap;
+  directives: ProfileDirectives;
+  status: ImportProfileStatus;
+}
+
+/** One row in the import_profiles table. */
+export interface ProfileRow extends ProfileInsert {
+  id: number;
+  created_at: string;
+  last_used_at: string | null;
+  use_count: number;
+}
+
+/** Fields supplied when attaching a participant to an expense. */
+export interface ParticipantInsert {
+  expense_id: number;
+  user_id: number;
+  role: ExpenseParticipantRole;
+  origin: ParticipantOrigin;
+  confidence: number;
+}
+
+/** One row in the expense_participants table. */
+export interface ParticipantRow extends ParticipantInsert {
+  id: number;
+  created_at: string;
+}
+
+/** Fields supplied when recording an expense event. */
+export interface ExpenseEventInsert {
+  expense_id: number;
+  kind: ExpenseEventKind;
+  detail: string | null;
+  transaction_id: number | null;
+  actor_user_id: number | null;
+}
+
+/** One row in the expense_events table. */
+export interface ExpenseEventRow extends ExpenseEventInsert {
+  id: number;
+  created_at: string;
+}
+
 export interface Store {
   readonly path: string;
   // users
@@ -181,6 +326,17 @@ export interface Store {
   expenseSummary(userId: number, from: string, to: string): ExpenseSummary;
   listExpenses(userId: number, from: string, to: string, limit: number, offset: number): ExpensePage;
   spendByWeekday(userId: number, from: string, to: string): WeekdaySpendRow[];
+  // participant-aware reads
+  expenseSummaryForUser(viewerId: number, from: string, to: string): ExpenseSummary;
+  listExpensesForUser(viewerId: number, from: string, to: string, limit: number, offset: number): ExpensePage;
+  spendByWeekdayForUser(viewerId: number, from: string, to: string): WeekdaySpendRow[];
+  findMatchCandidates(
+    memberIds: number[],
+    amountMinor: number,
+    currency: string,
+    fromDate: string,
+    toDate: string,
+  ): ExpenseRow[];
   // messages
   appendMessage(message: MessageRecord): void;
   // telegram linking
@@ -201,6 +357,30 @@ export interface Store {
   removeMember(ownerId: number, targetUserId: number): FamilyResult;
   visibleUserIds(viewerId: number): number[];
   resolveScope(viewerId: number, scope: string): number[];
+  // bank import
+  appendStatement(row: StatementInsert): number;
+  appendTransaction(row: TransactionInsert): number | null;
+  findTransactionByFingerprint(userId: number, fingerprint: string): TransactionRow | undefined;
+  listTransactions(statementId: number): TransactionRow[];
+  setTransactionResolution(transactionId: number, resolution: TransactionResolution): void;
+  saveProfile(row: ProfileInsert): number;
+  findProfile(userId: number, fingerprint: string): ProfileRow | undefined;
+  listProfiles(userId: number): ProfileRow[];
+  setProfileStatus(userId: number, fingerprint: string, status: ImportProfileStatus): void;
+  markProfileUsed(userId: number, fingerprint: string): void;
+  // participants and events
+  addParticipant(row: ParticipantInsert): void;
+  removeParticipant(
+    expenseId: number,
+    userId: number,
+    role: ExpenseParticipantRole,
+    origin: ParticipantOrigin,
+  ): void;
+  listParticipants(expenseId: number): ParticipantRow[];
+  appendExpenseEvent(row: ExpenseEventInsert): void;
+  listExpenseEvents(expenseId: number): ExpenseEventRow[];
+  /** Run several writes as one transaction; nests with SAVEPOINT. */
+  transaction<T>(fn: () => T): T;
   // exchange rates
   getRateForDate(base: string, quote: string, requestedDate: string): RateLookup | undefined;
   getNearestRate(base: string, quote: string, requestedDate: string): RateLookup | undefined;
@@ -250,7 +430,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   paid_at           TEXT,
   paid_at_precision TEXT NOT NULL,
   expense_date      TEXT NOT NULL,
-  source            TEXT NOT NULL CHECK (source IN ('text', 'photo', 'voice')),
+  source            TEXT NOT NULL CHECK (source IN ('text', 'photo', 'voice', 'import')),
   confidence        REAL NOT NULL,
   status            TEXT NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending', 'confirmed', 'rejected')),
@@ -308,6 +488,85 @@ CREATE TABLE IF NOT EXISTS family_members (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_family_members_active
   ON family_members (user_id) WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS bank_statements (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id),
+  bank        TEXT,
+  format      TEXT NOT NULL,
+  file_name   TEXT NOT NULL,
+  period_from TEXT,
+  period_to   TEXT,
+  created_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bank_transactions (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  statement_id         INTEGER NOT NULL REFERENCES bank_statements(id),
+  user_id              INTEGER NOT NULL REFERENCES users(id),
+  account              TEXT,
+  paid_at              TEXT,
+  expense_date         TEXT NOT NULL,
+  amount_minor         INTEGER,
+  currency             TEXT,
+  account_amount_minor INTEGER,
+  account_currency     TEXT,
+  description          TEXT NOT NULL,
+  category             TEXT,
+  balance_minor        INTEGER,
+  direction            TEXT NOT NULL CHECK (direction IN ('outflow', 'inflow', 'transfer')),
+  card                 TEXT,
+  fingerprint          TEXT NOT NULL,
+  expense_id           INTEGER REFERENCES expenses(id),
+  state                TEXT NOT NULL DEFAULT 'unmatched'
+                       CHECK (state IN ('unmatched', 'linked', 'created', 'ignored')),
+  created_at           TEXT NOT NULL,
+  UNIQUE (user_id, fingerprint)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_user_state ON bank_transactions (user_id, state);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_statement   ON bank_transactions (statement_id);
+
+CREATE TABLE IF NOT EXISTS import_profiles (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id      INTEGER NOT NULL REFERENCES users(id),
+  fingerprint  TEXT NOT NULL,
+  bank         TEXT,
+  kind         TEXT NOT NULL,
+  roles        TEXT NOT NULL,
+  directives   TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'verified')),
+  created_at   TEXT NOT NULL,
+  last_used_at TEXT,
+  use_count    INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (user_id, fingerprint)
+);
+
+CREATE TABLE IF NOT EXISTS expense_participants (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  expense_id INTEGER NOT NULL REFERENCES expenses(id),
+  user_id    INTEGER NOT NULL REFERENCES users(id),
+  role       TEXT NOT NULL CHECK (role IN ('recorder', 'payer', 'confirmer')),
+  origin     TEXT NOT NULL CHECK (origin IN ('bot', 'import', 'manual')),
+  confidence REAL NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  UNIQUE (expense_id, user_id, role, origin)
+);
+
+CREATE INDEX IF NOT EXISTS idx_expense_participants_expense ON expense_participants (expense_id);
+CREATE INDEX IF NOT EXISTS idx_expense_participants_user    ON expense_participants (user_id);
+
+CREATE TABLE IF NOT EXISTS expense_events (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  expense_id    INTEGER NOT NULL REFERENCES expenses(id),
+  kind          TEXT NOT NULL,
+  detail        TEXT,
+  transaction_id INTEGER REFERENCES bank_transactions(id),
+  actor_user_id INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_expense_events_expense ON expense_events (expense_id);
 `;
 
 /** Columns of ExpenseUpdate in a stable order, mapped to their SQL names. */
@@ -466,6 +725,122 @@ export function createStore(dbPath: string): Store {
       "VALUES (?, ?, ?, ?, ?, ?)",
   );
 
+  const insertStatement = db.prepare(
+    "INSERT INTO bank_statements (user_id, bank, format, file_name, period_from, period_to, created_at) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?)",
+  );
+  const insertTransaction = db.prepare(`
+    INSERT INTO bank_transactions (statement_id, user_id, account, paid_at, expense_date, amount_minor, currency,
+      account_amount_minor, account_currency, description, category, balance_minor, direction, card, fingerprint,
+      created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const selectTransactionByFingerprint = db.prepare(
+    "SELECT * FROM bank_transactions WHERE user_id = ? AND fingerprint = ?",
+  );
+  const selectTransactionsByStatement = db.prepare("SELECT * FROM bank_transactions WHERE statement_id = ? ORDER BY id");
+  const updateTransactionResolution = db.prepare(
+    "UPDATE bank_transactions SET state = ?, expense_id = ? WHERE id = ?",
+  );
+
+  const insertProfile = db.prepare(`
+    INSERT INTO import_profiles (user_id, fingerprint, bank, kind, roles, directives, status, created_at, use_count)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+    ON CONFLICT (user_id, fingerprint) DO UPDATE SET
+      bank = excluded.bank, kind = excluded.kind, roles = excluded.roles,
+      directives = excluded.directives, status = excluded.status
+  `);
+  const selectProfile = db.prepare("SELECT * FROM import_profiles WHERE user_id = ? AND fingerprint = ?");
+  const selectProfiles = db.prepare("SELECT * FROM import_profiles WHERE user_id = ? ORDER BY id");
+  const updateProfileStatus = db.prepare(
+    "UPDATE import_profiles SET status = ? WHERE user_id = ? AND fingerprint = ?",
+  );
+  const touchProfile = db.prepare(
+    "UPDATE import_profiles SET last_used_at = ?, use_count = use_count + 1 WHERE user_id = ? AND fingerprint = ?",
+  );
+
+  const insertParticipant = db.prepare(
+    "INSERT OR IGNORE INTO expense_participants (expense_id, user_id, role, origin, confidence, created_at) " +
+      "VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const deleteParticipant = db.prepare(
+    "DELETE FROM expense_participants WHERE expense_id = ? AND user_id = ? AND role = ? AND origin = ?",
+  );
+  const selectParticipants = db.prepare(
+    "SELECT * FROM expense_participants WHERE expense_id = ? ORDER BY id",
+  );
+  const insertEvent = db.prepare(
+    "INSERT INTO expense_events (expense_id, kind, detail, transaction_id, actor_user_id, created_at) " +
+      "VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const selectEvents = db.prepare("SELECT * FROM expense_events WHERE expense_id = ? ORDER BY id");
+
+  /** Attribute an expense to its confirmed payer, or to its owner when none. */
+  const ATTRIBUTED_USER =
+    "COALESCE((SELECT p.user_id FROM expense_participants p " +
+    "WHERE p.expense_id = e.id AND p.role = 'payer' AND p.origin = 'import' LIMIT 1), e.user_id)";
+
+  const selectScopedSummary = db.prepare(`
+    SELECT
+      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN base_amount_minor END), 0) AS confirmed_total_minor,
+      SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed_count,
+      COALESCE(SUM(CASE WHEN status = 'pending' THEN base_amount_minor END), 0) AS pending_total_minor,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count
+    FROM (
+      SELECT e.*, ${ATTRIBUTED_USER} AS attributed_user_id FROM expenses e
+      WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
+    ) WHERE attributed_user_id = ?
+  `);
+  const selectScopedDaily = db.prepare(`
+    SELECT expense_date AS date,
+      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN base_amount_minor END), 0) AS total_minor,
+      SUM(CASE WHEN status IN ('confirmed', 'pending') THEN 1 ELSE 0 END) AS count
+    FROM (
+      SELECT e.*, ${ATTRIBUTED_USER} AS attributed_user_id FROM expenses e
+      WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
+    ) WHERE attributed_user_id = ?
+    GROUP BY expense_date ORDER BY expense_date
+  `);
+  const selectScopedCategory = db.prepare(`
+    SELECT COALESCE(category, 'other') AS category, COALESCE(SUM(base_amount_minor), 0) AS total_minor
+    FROM (
+      SELECT e.*, ${ATTRIBUTED_USER} AS attributed_user_id FROM expenses e
+      WHERE e.expense_date BETWEEN ? AND ? AND e.status = 'confirmed'
+    ) WHERE attributed_user_id = ?
+    GROUP BY COALESCE(category, 'other') ORDER BY total_minor DESC
+  `);
+  const selectScopedWeekday = db.prepare(`
+    SELECT CAST(strftime('%w', expense_date) AS INTEGER) AS weekday,
+      COALESCE(SUM(base_amount_minor), 0) AS total_minor
+    FROM (
+      SELECT e.*, ${ATTRIBUTED_USER} AS attributed_user_id FROM expenses e
+      WHERE e.expense_date BETWEEN ? AND ? AND e.status = 'confirmed'
+    ) WHERE attributed_user_id = ?
+    GROUP BY weekday
+  `);
+  const selectScopedPage = db.prepare(`
+    SELECT e.* FROM expenses e
+    WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
+      AND (e.user_id = ? OR EXISTS (
+        SELECT 1 FROM expense_participants p WHERE p.expense_id = e.id AND p.user_id = ?))
+    ORDER BY e.expense_date DESC, e.id DESC LIMIT ? OFFSET ?
+  `);
+  const selectScopedPageCount = db.prepare(`
+    SELECT COUNT(*) AS total FROM expenses e
+    WHERE e.expense_date BETWEEN ? AND ? AND e.status IN ('confirmed', 'pending')
+      AND (e.user_id = ? OR EXISTS (
+        SELECT 1 FROM expense_participants p WHERE p.expense_id = e.id AND p.user_id = ?))
+  `);
+
+  /** Import profiles store roles and directives as JSON text in the row. */
+  interface DbProfileRow extends Omit<ProfileRow, "roles" | "directives"> {
+    roles: string;
+    directives: string;
+  }
+  function parseProfile(row: DbProfileRow): ProfileRow {
+    return { ...row, roles: JSON.parse(row.roles), directives: JSON.parse(row.directives) };
+  }
+
   function findUserById(id: number): UserRow | undefined {
     return selectUserById.get(id) as unknown as UserRow | undefined;
   }
@@ -479,6 +854,26 @@ export function createStore(dbPath: string): Store {
     const ids = new Set<number>([viewerId]);
     for (const row of rows) ids.add(row.user_id);
     return [...ids];
+  }
+
+  // Nest transactional writes with SAVEPOINT, so an import that wraps several
+  // store calls in one transaction can still call appendExpense, which is
+  // itself transactional.
+  let txDepth = 0;
+  function transact<T>(fn: () => T): T {
+    const name = `sp${txDepth}`;
+    db.exec(txDepth === 0 ? "BEGIN IMMEDIATE" : `SAVEPOINT ${name}`);
+    txDepth++;
+    try {
+      const result = fn();
+      txDepth--;
+      db.exec(txDepth === 0 ? "COMMIT" : `RELEASE ${name}`);
+      return result;
+    } catch (err) {
+      txDepth--;
+      db.exec(txDepth === 0 ? "ROLLBACK" : `ROLLBACK TO ${name}`);
+      throw err;
+    }
   }
 
   return {
@@ -530,27 +925,39 @@ export function createStore(dbPath: string): Store {
     },
 
     appendExpense(row) {
-      const now = nowIso();
-      const result = insertExpense.run(
-        row.user_id,
-        row.amount_minor,
-        row.currency,
-        row.base_amount_minor,
-        row.base_currency,
-        row.fx_rate,
-        row.fx_rate_date,
-        row.category,
-        row.description,
-        row.paid_at,
-        row.paid_at_precision,
-        row.expense_date,
-        row.source,
-        row.confidence,
-        row.status,
-        now,
-        now,
-      );
-      return Number(result.lastInsertRowid);
+      return transact(() => {
+        const now = nowIso();
+        const result = insertExpense.run(
+          row.user_id,
+          row.amount_minor,
+          row.currency,
+          row.base_amount_minor,
+          row.base_currency,
+          row.fx_rate,
+          row.fx_rate_date,
+          row.category,
+          row.description,
+          row.paid_at,
+          row.paid_at_precision,
+          row.expense_date,
+          row.source,
+          row.confidence,
+          row.status,
+          now,
+          now,
+        );
+        const id = Number(result.lastInsertRowid);
+        // Every expense has a recorder. A bot-recorded expense also gets an
+        // assumed payer, since the actual payer is unknown at record time; an
+        // imported expense gets its confirmed payer from reconciliation.
+        const origin: ParticipantOrigin = row.source === "import" ? "import" : "bot";
+        insertParticipant.run(id, row.user_id, "recorder", origin, 1, now);
+        if (row.source !== "import") {
+          insertParticipant.run(id, row.user_id, "payer", "bot", row.confidence, now);
+        }
+        insertEvent.run(id, "created", null, null, row.user_id, now);
+        return id;
+      });
     },
     setExpenseStatus(id, status) {
       updateStatus.run(status, nowIso(), id);
@@ -600,6 +1007,50 @@ export function createStore(dbPath: string): Store {
     spendByWeekday(userId, from, to) {
       const rows = selectWeekdaySpend.all(userId, from, to) as unknown as Array<{ weekday: number; total_minor: number }>;
       return rows.map((row) => ({ weekday: Number(row.weekday), total_minor: Number(row.total_minor) }));
+    },
+    expenseSummaryForUser(viewerId, from, to) {
+      const totals = selectScopedSummary.get(from, to, viewerId) as unknown as {
+        confirmed_total_minor: number;
+        confirmed_count: number;
+        pending_total_minor: number;
+        pending_count: number;
+      };
+      const byDay = (selectScopedDaily.all(from, to, viewerId) as unknown as Array<Record<string, unknown>>).map(
+        (row) => ({ date: String(row.date), total_minor: Number(row.total_minor), count: Number(row.count) }),
+      );
+      const byCategory = (
+        selectScopedCategory.all(from, to, viewerId) as unknown as Array<{ category: string; total_minor: number }>
+      ).map((row) => ({ category: row.category, total_minor: Number(row.total_minor) }));
+      return {
+        confirmed_total_minor: Number(totals.confirmed_total_minor),
+        confirmed_count: Number(totals.confirmed_count),
+        pending_total_minor: Number(totals.pending_total_minor),
+        pending_count: Number(totals.pending_count),
+        by_day: byDay,
+        by_category: byCategory,
+      };
+    },
+    listExpensesForUser(viewerId, from, to, limit, offset) {
+      const items = selectScopedPage.all(from, to, viewerId, viewerId, limit, offset) as unknown as ExpenseRow[];
+      const counted = selectScopedPageCount.get(from, to, viewerId, viewerId) as unknown as { total: number };
+      return { items, total: Number(counted.total) };
+    },
+    spendByWeekdayForUser(viewerId, from, to) {
+      const rows = selectScopedWeekday.all(from, to, viewerId) as unknown as Array<{
+        weekday: number;
+        total_minor: number;
+      }>;
+      return rows.map((row) => ({ weekday: Number(row.weekday), total_minor: Number(row.total_minor) }));
+    },
+    findMatchCandidates(memberIds, amountMinor, currency, fromDate, toDate) {
+      if (memberIds.length === 0) return [];
+      const placeholders = memberIds.map(() => "?").join(", ");
+      const stmt = db.prepare(
+        `SELECT * FROM expenses WHERE user_id IN (${placeholders}) ` +
+          "AND status IN ('confirmed', 'pending') AND amount_minor = ? AND currency = ? " +
+          "AND expense_date BETWEEN ? AND ? ORDER BY expense_date DESC, id DESC",
+      );
+      return stmt.all(...memberIds, amountMinor, currency, fromDate, toDate) as unknown as ExpenseRow[];
     },
 
     appendMessage(message) {
@@ -780,6 +1231,96 @@ export function createStore(dbPath: string): Store {
       throw new ScopeForbiddenError();
     },
 
+    appendStatement(row) {
+      const result = insertStatement.run(
+        row.user_id,
+        row.bank,
+        row.format,
+        row.file_name,
+        row.period_from,
+        row.period_to,
+        nowIso(),
+      );
+      return Number(result.lastInsertRowid);
+    },
+    appendTransaction(row) {
+      const existing = selectTransactionByFingerprint.get(row.user_id, row.fingerprint) as unknown as
+        | TransactionRow
+        | undefined;
+      if (existing) return null;
+      const result = insertTransaction.run(
+        row.statement_id,
+        row.user_id,
+        row.account,
+        row.paid_at,
+        row.expense_date,
+        row.amount_minor,
+        row.currency,
+        row.account_amount_minor,
+        row.account_currency,
+        row.description,
+        row.category,
+        row.balance_minor,
+        row.direction,
+        row.card,
+        row.fingerprint,
+        nowIso(),
+      );
+      return Number(result.lastInsertRowid);
+    },
+    findTransactionByFingerprint(userId, fingerprint) {
+      return selectTransactionByFingerprint.get(userId, fingerprint) as unknown as TransactionRow | undefined;
+    },
+    listTransactions(statementId) {
+      return selectTransactionsByStatement.all(statementId) as unknown as TransactionRow[];
+    },
+    setTransactionResolution(transactionId, resolution) {
+      updateTransactionResolution.run(resolution.state, resolution.expense_id, transactionId);
+    },
+    saveProfile(row) {
+      insertProfile.run(
+        row.user_id,
+        row.fingerprint,
+        row.bank,
+        row.kind,
+        JSON.stringify(row.roles),
+        JSON.stringify(row.directives),
+        row.status,
+        nowIso(),
+      );
+      const saved = selectProfile.get(row.user_id, row.fingerprint) as unknown as DbProfileRow | undefined;
+      return saved ? saved.id : 0;
+    },
+    findProfile(userId, fingerprint) {
+      const row = selectProfile.get(userId, fingerprint) as unknown as DbProfileRow | undefined;
+      return row ? parseProfile(row) : undefined;
+    },
+    listProfiles(userId) {
+      return (selectProfiles.all(userId) as unknown as DbProfileRow[]).map(parseProfile);
+    },
+    setProfileStatus(userId, fingerprint, status) {
+      updateProfileStatus.run(status, userId, fingerprint);
+    },
+    markProfileUsed(userId, fingerprint) {
+      touchProfile.run(nowIso(), userId, fingerprint);
+    },
+
+    addParticipant(row) {
+      insertParticipant.run(row.expense_id, row.user_id, row.role, row.origin, row.confidence, nowIso());
+    },
+    removeParticipant(expenseId, userId, role, origin) {
+      deleteParticipant.run(expenseId, userId, role, origin);
+    },
+    listParticipants(expenseId) {
+      return selectParticipants.all(expenseId) as unknown as ParticipantRow[];
+    },
+    appendExpenseEvent(row) {
+      insertEvent.run(row.expense_id, row.kind, row.detail, row.transaction_id, row.actor_user_id, nowIso());
+    },
+    listExpenseEvents(expenseId) {
+      return selectEvents.all(expenseId) as unknown as ExpenseEventRow[];
+    },
+
     getRateForDate(base, quote, requestedDate) {
       const row = selectExactRate.get(base, quote, requestedDate) as unknown as RateLookup | undefined;
       if (!row) return undefined;
@@ -792,6 +1333,10 @@ export function createStore(dbPath: string): Store {
     },
     saveRate(base, quote, requestedDate, rate, sourceDate, source) {
       insertRate.run(base, quote, requestedDate, rate, sourceDate, source);
+    },
+
+    transaction<T>(fn: () => T): T {
+      return transact(fn);
     },
 
     close() {
