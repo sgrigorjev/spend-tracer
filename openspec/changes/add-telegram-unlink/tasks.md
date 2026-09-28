@@ -17,4 +17,4 @@
 ## 4. Quality and release
 
 - [x] 4.1 Run `npm run typecheck` in `api/`, `bot/` and `web/`; verify all pass.
-- [ ] 4.2 Review the diff for authorization scope (session-only user, no account id in the request) and token lifecycle (unlink invalidates pending tokens in one transaction), record the outcome in `review.md`, then open the PR with the `enhancement` label.
+- [x] 4.2 Review the diff for authorization scope (session-only user, no account id in the request) and token lifecycle (unlink invalidates pending tokens in one transaction), record the outcome in `review.md`, then open the PR with the `enhancement` label.
